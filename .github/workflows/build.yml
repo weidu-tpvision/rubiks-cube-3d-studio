@@ -1,0 +1,60 @@
+name: Build Desktop Apps (Windows & Ubuntu)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            artifact_name: RubiksCubeStudio-linux-x64
+            archive_cmd: tar -czf RubiksCubeStudio-linux-x64.tar.gz -C release/RubiksCubeStudio-linux-x64 .
+            archive_file: RubiksCubeStudio-linux-x64.tar.gz
+          - os: windows-latest
+            platform: win32
+            artifact_name: RubiksCubeStudio-win32-x64
+            archive_cmd: Compress-Archive -Path release/RubiksCubeStudio-win32-x64/* -DestinationPath RubiksCubeStudio-win32-x64.zip
+            archive_file: RubiksCubeStudio-win32-x64.zip
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Web Assets (Vite)
+        run: npm run build
+
+      - name: Package Desktop Application (${{ matrix.platform }})
+        run: npx electron-packager . RubiksCubeStudio --platform=${{ matrix.platform }} --arch=x64 --out=release --overwrite --prune=true
+
+      - name: Archive package (Linux)
+        if: runner.os == 'Linux'
+        run: tar -czf RubiksCubeStudio-linux-x64.tar.gz -C release/RubiksCubeStudio-linux-x64 .
+
+      - name: Archive package (Windows)
+        if: runner.os == 'Windows'
+        run: Compress-Archive -Path release/RubiksCubeStudio-win32-x64/* -DestinationPath RubiksCubeStudio-win32-x64.zip
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.archive_file }}
+          retention-days: 30

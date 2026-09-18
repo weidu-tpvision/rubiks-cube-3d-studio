@@ -58,22 +58,47 @@ Strict separation of mouse actions prevents accidental camera movement while tur
 
 ## 🚀 Running the Application
 
-### 1. Native Windows Desktop App (.exe)
+### 1. Ubuntu / Linux Desktop Application
+
+You can launch the native Linux desktop app in two ways:
+- **Root Launcher**: Run [`./Launch-RubiksCubeStudio.sh`](./Launch-RubiksCubeStudio.sh).
+- **Or direct executable**: Run `./release/RubiksCubeStudio-linux-x64/RubiksCubeStudio`.
+
+#### Building for Ubuntu / Linux:
+```bash
+npm install
+npm run electron:build:linux
+```
+This packages the standalone Linux x64 binary into `release/RubiksCubeStudio-linux-x64`.
+
+---
+
+### 2. Native Windows Desktop App (.exe)
 
 You can launch the desktop application directly:
 - **Root Launcher**: Double-click [`Launch-RubiksCubeStudio.bat`](./Launch-RubiksCubeStudio.bat).
 - **Or direct executable**: Run `release/RubiksCubeStudio-win32-x64/RubiksCubeStudio.exe`.
 
-#### Building the Executable from Source:
+#### Building for Windows:
 ```bash
 npm install
-npm run electron:build
+npm run electron:build:win
 ```
-This builds the production Vite bundle and packages the standalone Windows binary with Electron Packager into `release/RubiksCubeStudio-win32-x64`.
+*(Or `npm run electron:build:all` to build both Windows and Linux simultaneously).*
 
 ---
 
-### 2. Web Browser Application
+### 3. Automated Multi-Platform CI/CD (GitHub Actions)
+
+Every push to `main` automatically triggers our GitHub Actions matrix pipeline (`.github/workflows/build.yml`), which compiles and packages:
+- 🐧 **`RubiksCubeStudio-linux-x64.tar.gz`** (native Ubuntu / Debian binary)
+- 🪟 **`RubiksCubeStudio-win32-x64.zip`** (native Windows x64 binary)
+
+Artifacts are directly downloadable from the **Actions** tab on GitHub.
+
+---
+
+### 4. Web Browser Application
 
 Run the local Vite development server:
 ```bash
