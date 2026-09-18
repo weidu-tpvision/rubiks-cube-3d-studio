@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D Rubik's Cube Studio & Step-by-Step Solver</title>
+  <link rel="stylesheet" href="/src/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧊</text></svg>">
+</head>
+<body>
+  <!-- 3D Viewport Container -->
+  <main id="app-viewport">
+    <canvas id="webgl-canvas"></canvas>
+  </main>
+
+  <!-- Top Header Bar -->
+  <header class="header-bar">
+    <div class="header-left">
+      <div class="app-logo">
+        <span class="logo-icon">🧊</span>
+        <span>Rubik's 3D Studio</span>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <button id="btn-scramble" class="btn" title="Scramble with 20 random moves">
+        <span class="icon">🔀</span> Scramble
+      </button>
+      <button id="btn-reset" class="btn" title="Reset cube to solved state">
+        <span class="icon">🔄</span> Reset
+      </button>
+      <!-- Solve Step-by-Step with Method Selector Dropdown -->
+      <div class="solve-dropdown-container">
+        <button id="btn-solve-step" class="btn btn-primary" title="Solve cube step-by-step with selected method">
+          <span class="icon">🧩</span> <span id="btn-solve-label">Solve: Optimal</span>
+        </button>
+        <button id="btn-solve-menu" class="btn btn-primary btn-caret" title="Choose Solving Method">
+          ▾
+        </button>
+        <div id="solve-method-menu" class="solve-method-menu hidden">
+          <div class="menu-heading">Select Solving Method</div>
+          <button class="method-option active" data-method="kociemba">
+            <span class="method-icon">⚡</span>
+            <div class="method-text">
+              <div class="method-name">Optimal (Kociemba)</div>
+              <div class="method-hint">~20 moves • Mathematical shortest path</div>
+            </div>
+          </button>
+          <button class="method-option" data-method="beginner">
+            <span class="method-icon">🔰</span>
+            <div class="method-text">
+              <div class="method-name">Beginner (Layer-by-Layer)</div>
+              <div class="method-hint">~110–120 moves • 7 standard learning stages</div>
+            </div>
+          </button>
+          <button class="method-option" data-method="cfop">
+            <span class="method-icon">👑</span>
+            <div class="method-text">
+              <div class="method-name">CFOP / Fridrich</div>
+              <div class="method-hint">~70–75 moves • Cross → F2L → OLL → PLL</div>
+            </div>
+          </button>
+          <button class="method-option" data-method="roux">
+            <span class="method-icon">💡</span>
+            <div class="method-text">
+              <div class="method-name">Roux Method</div>
+              <div class="method-hint">~70–75 moves • Left/Right Blocks & M-Slice</div>
+            </div>
+          </button>
+        </div>
+      </div>
+      <button id="btn-tutorial" class="btn btn-accent" title="Interactive speedcubing guides (Beginner, CFOP, Roux)">
+        <span class="icon">🎓</span> Learn Methods
+      </button>
+      <div id="cube-timer" class="timer-pill" title="Click to start/stop speedsolve timer">
+        0.00s
+      </div>
+      <button id="btn-reset-cam" class="btn" title="Reset 3D camera angle">
+        <span class="icon">🎥</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Bottom Status Bar (Bottom Left) -->
+  <div id="status-msg" class="status-badge">
+    Initializing solver engine...
+  </div>
+
+  <!-- Manual Move Pad (Bottom Right) -->
+  <div class="move-pad">
+    <div class="move-pad-header">
+      <span>Turn Controls</span>
+      <div class="modifier-group">
+        <button id="mod-prime" class="mod-btn" title="Invert turn direction (Prime)">'</button>
+        <button id="mod-double" class="mod-btn" title="Double 180° turn">2</button>
+      </div>
+    </div>
+
+    <div class="move-grid">
+      <button class="move-btn" data-move="U">U<span class="sub">Top</span></button>
+      <button class="move-btn" data-move="D">D<span class="sub">Bottom</span></button>
+      <button class="move-btn" data-move="F">F<span class="sub">Front</span></button>
+      <button class="move-btn" data-move="B">B<span class="sub">Back</span></button>
+      <button class="move-btn" data-move="L">L<span class="sub">Left</span></button>
+      <button class="move-btn" data-move="R">R<span class="sub">Right</span></button>
+    </div>
+
+    <div class="rot-group">
+      <button class="rot-btn" data-rot="x">Rot X</button>
+      <button class="rot-btn" data-rot="y">Rot Y</button>
+      <button class="rot-btn" data-rot="z">Rot Z</button>
+    </div>
+
+    <div class="move-pad-hint">
+      💡 Drag faces directly or use keys <strong>U, D, L, R, F, B</strong> (Shift for Prime).
+    </div>
+  </div>
+
+  <!-- Right-Side Inspector Panel (Option 2) -->
+  <aside id="step-player" class="inspector-panel hidden">
+    <!-- Panel Header -->
+    <div class="inspector-header">
+      <div class="inspector-title-wrap">
+        <h3 id="player-title" class="player-title"><span class="icon">🧩</span> Solution</h3>
+        <span id="player-stage-pill" class="stage-pill hidden">Stage 1/4: Cross</span>
+      </div>
+      <button id="player-btn-close" class="player-close" title="Close Panel">✕</button>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="player-progress-bar">
+      <div id="player-progress-fill" class="player-progress-fill"></div>
+    </div>
+
+    <!-- Hero Card: Current Move & Visual Guidance -->
+    <div class="inspector-hero-card">
+      <div class="hero-badge-wrap">
+        <div id="player-move-badge" class="player-badge">R'</div>
+      </div>
+      <div class="hero-meta">
+        <div id="player-move-desc" class="player-move-desc">Turn Right face 90° CCW</div>
+        <div id="player-step-count" class="player-step-count">Step 1 / 20</div>
+      </div>
+    </div>
+
+    <!-- Playback Navigation Controls -->
+    <div class="inspector-section">
+      <div class="section-label">Playback Controls</div>
+      <div class="player-nav-group">
+        <button id="player-btn-start" class="btn btn-sm" title="Reset to start of solution">⏮ Start</button>
+        <button id="player-btn-prev" class="btn" title="Previous step">◀ Prev</button>
+        <button id="player-btn-play" class="btn btn-primary" title="Play / Pause auto-solve">
+          <span class="icon">▶</span> Play
+        </button>
+        <button id="player-btn-next" class="btn" title="Next step">Next ▶</button>
+      </div>
+    </div>
+
+    <!-- Speed Adjustment -->
+    <div class="inspector-section">
+      <div class="section-label">Playback Speed</div>
+      <div class="player-speed-group">
+        <span>Speed:</span>
+        <input id="player-speed-slider" type="range" min="0" max="6" value="3" step="1" title="Playback speed (0.25x to 3.0x)" />
+        <span id="player-speed-val">1.0x</span>
+      </div>
+    </div>
+
+    <!-- Educational Hint Box -->
+    <div class="inspector-hint-box">
+      <span class="hint-icon">💡</span>
+      <span>Orbit with right-click to inspect all sides. The 3D cube is 100% visible with zero occlusion.</span>
+    </div>
+  </aside>
+
+  <!-- Tutorial / Educational Method Drawer -->
+  <div id="tutorial-drawer" class="tutorial-drawer">
+    <div class="drawer-header">
+      <h2><span>🎓</span> Human Solving Methods</h2>
+      <button id="btn-close-tutorial" class="player-close">✕</button>
+    </div>
+
+    <!-- Method Selection Tabs: Beginner, CFOP, Roux -->
+    <div id="tutorial-method-tabs" class="method-tabs"></div>
+
+    <div class="drawer-body">
+      <div id="tutorial-stage-list" class="stage-list"></div>
+      <div id="tutorial-stage-detail" class="stage-detail"></div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
