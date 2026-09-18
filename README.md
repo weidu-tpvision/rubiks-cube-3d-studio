@@ -1,66 +1,105 @@
-# ?? 3D Rubik's Cube Studio & Step-by-Step Solver
+# 🧊 Rubik's 3D Studio & Multi-Method Solver
 
-An interactive 3D Rubik's Cube application with full manual controls, touch/mouse face-dragging, automated step-by-step solving for any scramble, and an interactive 7-stage Beginner's Method tutorial.
+An interactive, high-performance 3D Rubik's Cube studio and speedcubing learning platform. Features realistic physics-based 3D graphics, FreeCAD-style viewport navigation, automated step-by-step solving across 4 proven methods, and an interactive visual tutorial curriculum with piece-highlighting demonstrations.
 
-Available as **both** a **Native Windows Desktop Application (.exe)** and a **Web Browser Application**.
+Available as both a **Native Windows Desktop Application (.exe)** and a **Modern Web Application**.
 
 ---
 
-## ?? Native Windows Desktop Application (.exe)
+![Rubik's 3D Studio](./docs/screenshot.png)
 
-You can launch the native Windows desktop app in two ways:
+---
 
-1. **Double-click the root launcher**:
-   - Double-click [`Launch-RubiksCubeStudio.bat`](./Launch-RubiksCubeStudio.bat) in this project folder.
-2. **Or directly run the `.exe`**:
-   - `release/RubiksCubeStudio-win32-x64/RubiksCubeStudio.exe`
+## ✨ Key Features
 
-### Re-building the `.exe`:
-To re-package the `.exe` after making any code changes:
+### 🧩 4 Solving Methods (Optimal & Human)
+Select your preferred solving method directly from the top solver dropdown:
+
+| Method | Stages | Typical Moves | Description |
+|---|:---:|:---:|---|
+| **⚡ Optimal (Kociemba)** | 1 | ~20–22 | Two-phase mathematical group theory solver finding the shortest path to solve. |
+| **🔰 Beginner (LBL)** | 7 | ~110–120 | The classic Layer-by-Layer method with intuitive stages and easy-to-learn algorithms. |
+| **👑 CFOP (Fridrich)** | 4 | ~70–75 | The world speedcubing standard: Cross → 4 First Two Layer (F2L) slots → OLL → PLL. |
+| **💡 Roux Method** | 4 | ~70–75 | Intuitive block-building & M-slice: First Block → Second Block → CMLL → LSE. |
+
+### 🎬 Interactive Step-by-Step Inspector Panel
+- **Left-Docked CAD-Style Inspector**: Keeps 100% of the vertical viewport clearance for the 3D cube with zero bottom occlusion.
+- **Visual Move Guidance**: Clear move badges (`R'`, `U2`, etc.) accompanied by natural-language instructions ("Turn Right face 90° CCW").
+- **Full Playback Navigation**: Play, pause, step forward, step backward, or jump to the starting state.
+- **Fine Speed Controls**: Discrete speed multiplier slider (`0.25x`, `0.5x`, `0.75x`, `1.0x`, `1.5x`, `2.0x`, `3.0x`).
+
+### 🎓 Learn Methods ("Load & Demonstrate on 3D Cube")
+- Step-by-step curriculum for **Beginner**, **CFOP**, and **Roux**.
+- Each stage includes goal explanations, mnemonics, and algorithms.
+- **"Load & Demonstrate on 3D Cube"**: Scrambles the cube to the exact textbook scenario, dims unrelated pieces to highlight target pieces, and loads the solution into the step player for turn-by-turn demonstration.
+- Highlights automatically restore when you start solving or resetting the cube.
+
+### 🔄 Precision FreeCAD / CAD-Style 3D Controls
+Strict separation of mouse actions prevents accidental camera movement while turning faces:
+
+| Action | Mouse / Keyboard | Description |
+|---|---|---|
+| **Turn Cube Face** | **Left-Click Drag** on piece | Click any outer piece and drag in the desired turn direction (22px responsive threshold). |
+| **Orbit 3D Camera** | **Right-Click Drag** anywhere | Smoothly rotates the 3D cube viewpoint from any angle. |
+| **Pan Camera** | **Shift + Right-Click** or **Ctrl + Right-Click** | Translates/pans the camera view across the screen. |
+| **Zoom / Dolly** | **Scroll Wheel** | Zooms camera in and out smoothly. |
+| **Camera Reset** | Click **🎥** in header | Restores default isometric perspective. |
+
+### 🎛️ Manual Move Pad & Keyboard Shortcuts
+- **On-Screen Control Pad** (bottom right):
+  - Turn buttons: **U** (Top/White), **D** (Bottom/Yellow), **F** (Front/Green), **B** (Back/Blue), **L** (Left/Orange), **R** (Right/Red).
+  - Modifier toggles: **`'`** (Prime / Counter-Clockwise) and **`2`** (180° Double Turn).
+  - Whole-cube rotations: **Rot X**, **Rot Y**, **Rot Z**.
+- **Keyboard Shortcuts**:
+  - `U`, `D`, `L`, `R`, `F`, `B` for clockwise face turns.
+  - Hold `Shift` + key for prime counter-clockwise turns (e.g., `Shift + R` for `R'`).
+
+---
+
+## 🚀 Running the Application
+
+### 1. Native Windows Desktop App (.exe)
+
+You can launch the desktop application directly:
+- **Root Launcher**: Double-click [`Launch-RubiksCubeStudio.bat`](./Launch-RubiksCubeStudio.bat).
+- **Or direct executable**: Run `release/RubiksCubeStudio-win32-x64/RubiksCubeStudio.exe`.
+
+#### Building the Executable from Source:
 ```bash
+npm install
 npm run electron:build
 ```
+This builds the production Vite bundle and packages the standalone Windows binary with Electron Packager into `release/RubiksCubeStudio-win32-x64`.
 
 ---
 
-## ?? Web Browser Version
+### 2. Web Browser Application
 
-### 1. Development Server
 Run the local Vite development server:
 ```bash
+npm install
 npm run dev
 ```
 Open **`http://localhost:5173`** in your browser.
 
-*(To expose it to your phone/tablet on the same Wi-Fi, run: `npm run dev -- --host`)*
+To expose the dev server to other devices on the same Wi-Fi network (e.g. tablet or mobile):
+```bash
+npm run dev -- --host
+```
 
 ---
 
-## ?? Controls & Features
+## 🛠️ Tech Stack & Architecture
 
-### 3D Camera Controls
-- **Orbit (Rotate View)**: Click and drag anywhere in the background.
-- **Zoom**: Mouse wheel or pinch-to-zoom.
-- **Reset Camera**: Click the ?? camera icon in the top header.
+- **Rendering Engine**: [Three.js](https://threejs.org/) (Custom cubie groups, canvas textures for center badges, PBR materials, soft shadows).
+- **Desktop Framework**: [Electron](https://www.electronjs.org/) (Standalone native window, offline-first).
+- **Build Tool**: [Vite](https://vitejs.dev/) (Lightning-fast HMR and production Rollup bundling).
+- **Solving Engine**:
+  - [cubejs](https://github.com/ldez/cubejs) (Herbert Kociemba Two-Phase mathematical solver).
+  - Custom algorithmic rule engines for Beginner Layer-by-Layer, CFOP, and Roux.
 
-### Rotating Cube Faces
-1. **Direct 3D Face Drag**: Click directly on any colored sticker and drag in the direction you wish to twist that slice!
-2. **On-Screen Control Pad** (bottom right):
-   - Face turn buttons: **U** (White), **D** (Yellow), **F** (Green), **B** (Blue), **L** (Orange), **R** (Red).
-   - Turn modifier toggles: `'` (Prime / counter-clockwise) and `2` (180� double turn).
-   - Whole-cube rotations: **Rot X**, **Rot Y**, **Rot Z**.
-3. **Keyboard Shortcuts**:
-   - `U`, `D`, `L`, `R`, `F`, `B` for clockwise 90� face turns.
-   - Hold `Shift` + key for prime (counter-clockwise) turns (e.g. `Shift + R` for `R'`).
+---
 
-### ?? Step-by-Step Solver
-1. Scramble or rotate the cube however you like.
-2. Click **?? Solve Step-by-Step** in the top bar.
-3. Use the **Step Player HUD**:
-   - **? Play / ? Pause**: Auto-play through the solving moves.
-   - **Next ? / ? Prev**: Advance or rewind one step at a time.
-   - **? Start**: Return to the initial scramble position.
-   - **Speed Slider**: Adjust playback speed.
+## 📄 License
 
-### ?? Interactive Beginner's Method Tutorial
-Click **?? Learn Method** in the header to open the interactive curriculum covering the 7 Layer-by-Layer stages. Click **"Load & Demonstrate on 3D Cube"** on any stage to see the setup and step through the algorithm with piece highlighting!
+MIT License. Free for personal, educational, and open-source use.
