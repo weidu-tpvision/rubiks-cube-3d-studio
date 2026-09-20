@@ -7,14 +7,17 @@ import {
 } from './CubeColors.js';
 
 export class RubiksCube {
-  constructor(scene) {
+  constructor(scene, dimension = 3) {
     this.scene = scene;
+    this.dimension = dimension;
     this.cubeGroup = new THREE.Group();
     this.cubeGroup.name = 'RubiksCube';
     this.scene.add(this.cubeGroup);
 
     this.cubies = [];
     this.allStickers = [];
+    this.orientationAnchors = null;
+    this.anchorMap = {};
 
     this.isAnimating = false;
     this.moveQueue = [];
@@ -27,6 +30,12 @@ export class RubiksCube {
     this.activePivot = null;
 
     this.buildCube();
+  }
+
+  setDimension(dimension) {
+    if (this.dimension === dimension) return;
+    this.dimension = dimension;
+    this.reset();
   }
 
   addMoveCompleteListener(fn) {
@@ -53,6 +62,27 @@ export class RubiksCube {
     this.cubies = [];
     this.allStickers = [];
 
+    // Orientation reference frame to track 6 face directions across whole-cube rotations
+    this.orientationAnchors = new THREE.Group();
+    this.orientationAnchors.name = 'OrientationAnchors';
+    this.cubeGroup.add(this.orientationAnchors);
+    this.anchorMap = {};
+
+    const directions = {
+      U: new THREE.Vector3(0, 1, 0),
+      D: new THREE.Vector3(0, -1, 0),
+      F: new THREE.Vector3(0, 0, 1),
+      B: new THREE.Vector3(0, 0, -1),
+      R: new THREE.Vector3(1, 0, 0),
+      L: new THREE.Vector3(-1, 0, 0),
+    };
+    for (const [faceChar, dir] of Object.entries(directions)) {
+      const anchorObj = new THREE.Object3D();
+      anchorObj.position.copy(dir);
+      this.orientationAnchors.add(anchorObj);
+      this.anchorMap[faceChar] = anchorObj;
+    }
+
     const cubieSize = 0.94;
     const stickerSize = 0.82;
     const bodyGeometry = new THREE.BoxGeometry(cubieSize, cubieSize, cubieSize);
@@ -71,65 +101,120 @@ export class RubiksCube {
       { face: 'B', pos: [0, 0, -0.472], rot: [0, Math.PI, 0], normal: new THREE.Vector3(0, 0, -1) },
     ];
 
-    for (let x = -1; x <= 1; x++) {
-      for (let y = -1; y <= 1; y++) {
-        for (let z = -1; z <= 1; z++) {
-          if (x === 0 && y === 0 && z === 0) continue;
+    if (this.dimension === 2) {
+      // 2x2 Pocket Cube: 8 corner pieces
+      const coords = [-0.5, 0.5];
+      for (const x of coords) {
+        for (const y of coords) {
+          for (const z of coords) {
+            const cubie = new THREE.Group();
+            cubie.position.set(x, y, z);
+            cubie.userData = { initialCoord: { x, y, z } };
 
-          const cubie = new THREE.Group();
-          cubie.position.set(x, y, z);
-          cubie.userData = { initialCoord: { x, y, z } };
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.castShadow = true;
+            body.receiveShadow = true;
+            cubie.add(body);
 
-          const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-          body.castShadow = true;
-          body.receiveShadow = true;
-          cubie.add(body);
+            faceDefs.forEach(def => {
+              let isOuter = false;
+              if (def.face === 'R' && x > 0) isOuter = true;
+              if (def.face === 'L' && x < 0) isOuter = true;
+              if (def.face === 'U' && y > 0) isOuter = true;
+              if (def.face === 'D' && y < 0) isOuter = true;
+              if (def.face === 'F' && z > 0) isOuter = true;
+              if (def.face === 'B' && z < 0) isOuter = true;
 
-          // Add stickers only on external faces
-          faceDefs.forEach(def => {
-            let isOuter = false;
-            if (def.face === 'R' && x === 1) isOuter = true;
-            if (def.face === 'L' && x === -1) isOuter = true;
-            if (def.face === 'U' && y === 1) isOuter = true;
-            if (def.face === 'D' && y === -1) isOuter = true;
-            if (def.face === 'F' && z === 1) isOuter = true;
-            if (def.face === 'B' && z === -1) isOuter = true;
+              if (isOuter) {
+                const colorInfo = FACE_COLORS[def.face];
+                const stickerMat = createStickerMaterial(colorInfo.hex);
 
-            if (isOuter) {
-              const colorInfo = FACE_COLORS[def.face];
-              const isCenter =
-                (def.face === 'R' && x === 1 && y === 0 && z === 0) ||
-                (def.face === 'L' && x === -1 && y === 0 && z === 0) ||
-                (def.face === 'U' && x === 0 && y === 1 && z === 0) ||
-                (def.face === 'D' && x === 0 && y === -1 && z === 0) ||
-                (def.face === 'F' && x === 0 && y === 0 && z === 1) ||
-                (def.face === 'B' && x === 0 && y === 0 && z === -1);
+                const sticker = new THREE.Mesh(stickerGeometry, stickerMat);
+                sticker.position.set(...def.pos);
+                sticker.rotation.set(...def.rot);
+                sticker.castShadow = false;
+                sticker.receiveShadow = true;
 
-              const stickerMat = isCenter
-                ? createCenterStickerMaterial(def.face, colorInfo.hex)
-                : createStickerMaterial(colorInfo.hex);
+                sticker.userData = {
+                  faceChar: def.face,
+                  originalFace: def.face,
+                  cubie: cubie,
+                  localNormal: def.normal.clone(),
+                  defaultColor: colorInfo.hex,
+                };
 
-              const sticker = new THREE.Mesh(stickerGeometry, stickerMat);
-              sticker.position.set(...def.pos);
-              sticker.rotation.set(...def.rot);
-              sticker.castShadow = false;
-              sticker.receiveShadow = true;
+                cubie.add(sticker);
+                this.allStickers.push(sticker);
+              }
+            });
 
-              sticker.userData = {
-                faceChar: def.face,
-                originalFace: def.face,
-                cubie: cubie,
-                localNormal: def.normal.clone(),
-                defaultColor: colorInfo.hex,
-              };
+            this.cubeGroup.add(cubie);
+            this.cubies.push(cubie);
+          }
+        }
+      }
+    } else {
+      // 3x3 Rubik's Cube: 26 pieces
+      for (let x = -1; x <= 1; x++) {
+        for (let y = -1; y <= 1; y++) {
+          for (let z = -1; z <= 1; z++) {
+            if (x === 0 && y === 0 && z === 0) continue;
 
-              cubie.add(sticker);
-              this.allStickers.push(sticker);
-            }
-          });
+            const cubie = new THREE.Group();
+            cubie.position.set(x, y, z);
+            cubie.userData = { initialCoord: { x, y, z } };
 
-          this.cubeGroup.add(cubie);
-          this.cubies.push(cubie);
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.castShadow = true;
+            body.receiveShadow = true;
+            cubie.add(body);
+
+            // Add stickers only on external faces
+            faceDefs.forEach(def => {
+              let isOuter = false;
+              if (def.face === 'R' && x === 1) isOuter = true;
+              if (def.face === 'L' && x === -1) isOuter = true;
+              if (def.face === 'U' && y === 1) isOuter = true;
+              if (def.face === 'D' && y === -1) isOuter = true;
+              if (def.face === 'F' && z === 1) isOuter = true;
+              if (def.face === 'B' && z === -1) isOuter = true;
+
+              if (isOuter) {
+                const colorInfo = FACE_COLORS[def.face];
+                const isCenter =
+                  (def.face === 'R' && x === 1 && y === 0 && z === 0) ||
+                  (def.face === 'L' && x === -1 && y === 0 && z === 0) ||
+                  (def.face === 'U' && x === 0 && y === 1 && z === 0) ||
+                  (def.face === 'D' && x === 0 && y === -1 && z === 0) ||
+                  (def.face === 'F' && x === 0 && y === 0 && z === 1) ||
+                  (def.face === 'B' && x === 0 && y === 0 && z === -1);
+
+                const stickerMat = isCenter
+                  ? createCenterStickerMaterial(def.face, colorInfo.hex)
+                  : createStickerMaterial(colorInfo.hex);
+
+                const sticker = new THREE.Mesh(stickerGeometry, stickerMat);
+                sticker.position.set(...def.pos);
+                sticker.rotation.set(...def.rot);
+                sticker.castShadow = false;
+                sticker.receiveShadow = true;
+
+                sticker.userData = {
+                  faceChar: def.face,
+                  originalFace: def.face,
+                  cubie: cubie,
+                  localNormal: def.normal.clone(),
+                  defaultColor: colorInfo.hex,
+                };
+
+                cubie.add(sticker);
+                this.allStickers.push(sticker);
+              }
+            });
+
+            this.cubeGroup.add(cubie);
+            this.cubies.push(cubie);
+          }
         }
       }
     }
@@ -155,8 +240,29 @@ export class RubiksCube {
     );
   }
 
+  // Snap orientation anchors to integer axes after whole-cube rotations
+  snapOrientationAnchors() {
+    if (!this.anchorMap || !this.orientationAnchors) return;
+    for (const key of Object.keys(this.anchorMap)) {
+      const a = this.anchorMap[key];
+      a.position.x = Math.round(a.position.x);
+      a.position.y = Math.round(a.position.y);
+      a.position.z = Math.round(a.position.z);
+    }
+    this.orientationAnchors.updateMatrixWorld(true);
+  }
+
   // Get the current world normal of a face's center piece
   getCenterNormal(faceChar) {
+    if (this.anchorMap && this.anchorMap[faceChar]) {
+      const pos = new THREE.Vector3();
+      this.anchorMap[faceChar].getWorldPosition(pos);
+      return new THREE.Vector3(
+        Math.round(pos.x),
+        Math.round(pos.y),
+        Math.round(pos.z)
+      ).normalize();
+    }
     const centerCubie = this.getCenterCubie(faceChar);
     if (!centerCubie) return null;
     const pos = new THREE.Vector3();
@@ -174,6 +280,13 @@ export class RubiksCube {
       if (moveTypeOrParams.isWholeCube) return this.cubies;
       const normal = moveTypeOrParams.normal;
       const cubiePos = new THREE.Vector3();
+      if (this.dimension === 2) {
+        if (moveTypeOrParams.isSlice) return [];
+        return this.cubies.filter(cubie => {
+          cubie.getWorldPosition(cubiePos);
+          return cubiePos.dot(normal) > 0.1;
+        });
+      }
       const targetDot = moveTypeOrParams.isSlice ? 0 : 1;
       return this.cubies.filter(cubie => {
         cubie.getWorldPosition(cubiePos);
@@ -183,6 +296,17 @@ export class RubiksCube {
 
     const base = moveTypeOrParams[0];
     if (['x', 'y', 'z'].includes(base)) return this.cubies;
+
+    if (this.dimension === 2) {
+      if (['M', 'E', 'S'].includes(base)) return [];
+      const normal = this.getCenterNormal(base);
+      if (!normal) return [];
+      const cubiePos = new THREE.Vector3();
+      return this.cubies.filter(cubie => {
+        cubie.getWorldPosition(cubiePos);
+        return cubiePos.dot(normal) > 0.1;
+      });
+    }
 
     let targetDot = 1;
     let normalFace = base;
@@ -281,6 +405,9 @@ export class RubiksCube {
       const pivot = new THREE.Group();
       this.cubeGroup.add(pivot);
 
+      if (params.isWholeCube && this.orientationAnchors) {
+        pivot.attach(this.orientationAnchors);
+      }
       sliceCubies.forEach(c => pivot.attach(c));
       pivot.rotateOnAxis(params.axis, params.angle);
       pivot.updateMatrixWorld(true);
@@ -289,6 +416,10 @@ export class RubiksCube {
         this.cubeGroup.attach(c);
         this.snapCubie(c);
       });
+      if (params.isWholeCube && this.orientationAnchors) {
+        this.cubeGroup.attach(this.orientationAnchors);
+        this.snapOrientationAnchors();
+      }
 
       this.cubeGroup.remove(pivot);
     });
@@ -330,6 +461,9 @@ export class RubiksCube {
     this.cubeGroup.add(pivot);
     this.activePivot = pivot;
 
+    if (params.isWholeCube && this.orientationAnchors) {
+      pivot.attach(this.orientationAnchors);
+    }
     sliceCubies.forEach(c => pivot.attach(c));
 
     const startTime = performance.now();
@@ -363,6 +497,10 @@ export class RubiksCube {
           this.cubeGroup.attach(c);
           this.snapCubie(c);
         });
+        if (params.isWholeCube && this.orientationAnchors) {
+          this.cubeGroup.attach(this.orientationAnchors);
+          this.snapOrientationAnchors();
+        }
 
         this.cubeGroup.remove(pivot);
         this.activePivot = null;
@@ -380,9 +518,15 @@ export class RubiksCube {
 
   // Snap cubie to exact integer positions and 90-degree rotations
   snapCubie(cubie) {
-    cubie.position.x = Math.round(cubie.position.x);
-    cubie.position.y = Math.round(cubie.position.y);
-    cubie.position.z = Math.round(cubie.position.z);
+    if (this.dimension === 2) {
+      cubie.position.x = Math.round(cubie.position.x * 2) / 2;
+      cubie.position.y = Math.round(cubie.position.y * 2) / 2;
+      cubie.position.z = Math.round(cubie.position.z * 2) / 2;
+    } else {
+      cubie.position.x = Math.round(cubie.position.x);
+      cubie.position.y = Math.round(cubie.position.y);
+      cubie.position.z = Math.round(cubie.position.z);
+    }
 
     const euler = new THREE.Euler().setFromQuaternion(cubie.quaternion, 'XYZ');
     const snapAngle = (a) => Math.round(a / (Math.PI / 2)) * (Math.PI / 2);
@@ -394,7 +538,7 @@ export class RubiksCube {
     cubie.updateMatrixWorld(true);
   }
 
-  // Extract the 54-facelet state in standard URFDLB order for solver
+  // Extract the facelet state in standard URFDLB order for solver (24 facelets for 2x2, 54 for 3x3)
   getFaceletString() {
     this.cubeGroup.updateMatrixWorld(true);
 
@@ -406,6 +550,86 @@ export class RubiksCube {
     const L = this.getCenterNormal('L');
 
     const faceNormals = { U, R, F, D, L, B };
+    const tempNormal = new THREE.Vector3();
+    const cubiePos = new THREE.Vector3();
+
+    if (this.dimension === 2) {
+      const faceSlots2x2 = {
+        U: [
+          new THREE.Vector3().add(U).add(B).add(L).multiplyScalar(0.5),
+          new THREE.Vector3().add(U).add(B).add(R).multiplyScalar(0.5),
+          new THREE.Vector3().add(U).add(F).add(L).multiplyScalar(0.5),
+          new THREE.Vector3().add(U).add(F).add(R).multiplyScalar(0.5),
+        ],
+        R: [
+          new THREE.Vector3().add(R).add(U).add(F).multiplyScalar(0.5),
+          new THREE.Vector3().add(R).add(U).add(B).multiplyScalar(0.5),
+          new THREE.Vector3().add(R).add(D).add(F).multiplyScalar(0.5),
+          new THREE.Vector3().add(R).add(D).add(B).multiplyScalar(0.5),
+        ],
+        F: [
+          new THREE.Vector3().add(F).add(U).add(L).multiplyScalar(0.5),
+          new THREE.Vector3().add(F).add(U).add(R).multiplyScalar(0.5),
+          new THREE.Vector3().add(F).add(D).add(L).multiplyScalar(0.5),
+          new THREE.Vector3().add(F).add(D).add(R).multiplyScalar(0.5),
+        ],
+        D: [
+          new THREE.Vector3().add(D).add(F).add(L).multiplyScalar(0.5),
+          new THREE.Vector3().add(D).add(F).add(R).multiplyScalar(0.5),
+          new THREE.Vector3().add(D).add(B).add(L).multiplyScalar(0.5),
+          new THREE.Vector3().add(D).add(B).add(R).multiplyScalar(0.5),
+        ],
+        L: [
+          new THREE.Vector3().add(L).add(U).add(B).multiplyScalar(0.5),
+          new THREE.Vector3().add(L).add(U).add(F).multiplyScalar(0.5),
+          new THREE.Vector3().add(L).add(D).add(B).multiplyScalar(0.5),
+          new THREE.Vector3().add(L).add(D).add(F).multiplyScalar(0.5),
+        ],
+        B: [
+          new THREE.Vector3().add(B).add(U).add(R).multiplyScalar(0.5),
+          new THREE.Vector3().add(B).add(U).add(L).multiplyScalar(0.5),
+          new THREE.Vector3().add(B).add(D).add(R).multiplyScalar(0.5),
+          new THREE.Vector3().add(B).add(D).add(L).multiplyScalar(0.5),
+        ],
+      };
+
+      const order = ['U', 'R', 'F', 'D', 'L', 'B'];
+      let result = '';
+
+      for (const faceKey of order) {
+        const slots = faceSlots2x2[faceKey];
+        const targetNormal = faceNormals[faceKey];
+
+        for (const targetSlot of slots) {
+          let matchedSticker = null;
+
+          for (const cubie of this.cubies) {
+            cubie.getWorldPosition(cubiePos);
+            if (cubiePos.distanceTo(targetSlot) < 0.3) {
+              for (const child of cubie.children) {
+                if (child.userData && child.userData.localNormal) {
+                  tempNormal.copy(child.userData.localNormal).applyQuaternion(cubie.quaternion);
+                  if (tempNormal.dot(targetNormal) > 0.7) {
+                    matchedSticker = child;
+                    break;
+                  }
+                }
+              }
+              break;
+            }
+          }
+
+          if (matchedSticker) {
+            result += matchedSticker.userData.faceChar;
+          } else {
+            console.warn(`Could not find 2x2 sticker at ${faceKey} slot`, targetSlot);
+            result += faceKey;
+          }
+        }
+      }
+
+      return result;
+    }
 
     const faceSlots = {
       U: [
@@ -478,9 +702,6 @@ export class RubiksCube {
 
     const order = ['U', 'R', 'F', 'D', 'L', 'B'];
     let result = '';
-
-    const tempNormal = new THREE.Vector3();
-    const cubiePos = new THREE.Vector3();
 
     for (const faceKey of order) {
       const slots = faceSlots[faceKey];

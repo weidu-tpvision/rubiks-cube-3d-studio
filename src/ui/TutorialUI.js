@@ -2,12 +2,13 @@ import { TUTORIAL_METHODS } from '../solver/TutorialData.js';
 import { solverService } from '../solver/SolverService.js';
 
 export class TutorialUI {
-  constructor(rubiksCube, stepPlayer) {
+  constructor(rubiksCube, stepPlayer, options = {}) {
     this.cube = rubiksCube;
     this.player = stepPlayer;
     this.methods = TUTORIAL_METHODS;
-    this.currentMethodKey = 'beginner';
-    this.currentStage = this.methods.beginner.stages[0];
+    this.onCubeDimensionChange = options.onCubeDimensionChange || null;
+    this.currentMethodKey = this.cube.dimension === 2 ? 'beginner2x2' : 'beginner';
+    this.currentStage = this.methods[this.currentMethodKey].stages[0];
 
     this.drawer = document.getElementById('tutorial-drawer');
     this.closeBtn = document.getElementById('btn-close-tutorial');
@@ -27,6 +28,22 @@ export class TutorialUI {
 
   open() {
     if (this.drawer) {
+      const is2x2 = this.cube.dimension === 2;
+      const currentMethod = this.methods[this.currentMethodKey];
+      const methodIs2x2 = currentMethod?.cubeType === '2x2';
+
+      if (is2x2 && !methodIs2x2) {
+        this.currentMethodKey = 'beginner2x2';
+        this.currentStage = this.methods.beginner2x2.stages[0];
+      } else if (!is2x2 && methodIs2x2) {
+        this.currentMethodKey = 'beginner';
+        this.currentStage = this.methods.beginner.stages[0];
+      }
+
+      this.renderMethodTabs();
+      this.renderStageList();
+      this.renderStageDetail(this.currentStage);
+
       this.drawer.classList.add('open');
       document.body.classList.add('has-tutorial-drawer');
     }
@@ -140,6 +157,14 @@ export class TutorialUI {
 
   demonstrateStage(stage, currentMethod) {
     this.close();
+
+    const targetDim = currentMethod.cubeType === '2x2' ? 2 : 3;
+    if (this.cube.dimension !== targetDim) {
+      this.cube.setDimension(targetDim);
+      if (this.onCubeDimensionChange) {
+        this.onCubeDimensionChange(targetDim);
+      }
+    }
 
     // Reset cube
     this.cube.reset();

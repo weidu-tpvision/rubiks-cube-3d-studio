@@ -249,4 +249,112 @@ export const TUTORIAL_METHODS = {
       },
     ],
   },
+  beginner2x2: {
+    cubeType: '2x2',
+    name: "2×2 Beginner's Method",
+    shortName: "2×2 Beginner",
+    badge: "3 Stages • ~15–20 Moves",
+    desc: "The classic Layer-by-Layer approach adapted for the 2×2 Pocket Cube. Complete the white first layer, orient yellow top corners, and swap them into place.",
+    stages: [
+      {
+        id: 1,
+        title: 'Stage 1: Solve First Layer',
+        subtitle: 'White Face with Matching Sides',
+        goal: 'Solve all 4 bottom white corners so the bottom face is solid white and all 4 side colors match each other.',
+        mnemonic: 'Right corner insert: R U R\' (or R\' D\' R D). Match lateral colors before inserting!',
+        algorithm: "R U R' U' (Sexy Move Corner Insert)",
+        setupScramble: "R U R' U' R U R' U'",
+        demoMoves: "R U R' U' R U R' U' R U R' U'",
+        explanation:
+          'Find a white corner piece. Look at its three colors (e.g. White-Red-Green). Place it directly above or beneath its target slot and apply R U R\' U\' until it drops into place with White facing down and its side colors matching.',
+        filter: (sticker) => {
+          const p = sticker.userData.cubie.position;
+          return p.y <= 0.1;
+        },
+      },
+      {
+        id: 2,
+        title: 'Stage 2: Orient Last Layer (OLL)',
+        subtitle: 'Sune & Headlights Algorithm',
+        goal: 'Turn all top (yellow) corner stickers upward so the top face is solid yellow without disturbing the bottom layer.',
+        mnemonic: "Sune: R U R' U R U2 R' | Anti-Sune: R U2 R' U' R U' R'",
+        algorithm: "R U R' U R U2 R' (Sune)",
+        setupScramble: "R U2 R' U' R U' R'",
+        demoMoves: "R U R' U R U2 R'",
+        explanation:
+          'Hold the cube with White on the bottom. Look at the top yellow pattern. If 1 corner is yellow, hold it in Front-Left and execute Sune. If 2 or 0 corners are yellow, apply Sune to transition into a 1-corner state.',
+        filter: (sticker) => {
+          const p = sticker.userData.cubie.position;
+          return p.y >= 0.1;
+        },
+      },
+      {
+        id: 3,
+        title: 'Stage 3: Permute Last Layer (PLL)',
+        subtitle: 'Adjacent Corner Swap (T-Perm)',
+        goal: 'Permute the top layer corners to complete the solved 2×2 cube.',
+        mnemonic: "T-Perm: R U R' U' R' F R2 U' R' U' R U R' F' | Y-Perm for diagonal swap",
+        algorithm: "R U R' U' R' F R2 U' R' U' R U R' F'",
+        setupScramble: "F R U' R' U R U R2 F' R U R U' R'",
+        demoMoves: "R U R' U' R' F R2 U' R' U' R U R' F'",
+        explanation:
+          'Check the top layer for two matching adjacent corners (headlights). Place the matching bar on the Left side (or Back) and apply the T-Perm. If no two corners match, apply Y-Perm or T-Perm once from any angle.',
+        filter: (sticker) => true,
+      },
+    ],
+  },
+  ortega2x2: {
+    cubeType: '2x2',
+    name: "2×2 Ortega Method",
+    shortName: "2×2 Ortega",
+    badge: "3 Stages • ~11–15 Moves (Speedcubing)",
+    desc: "The world-standard speedcubing method for 2×2. Solve any solid first face, orient opposite face in 1 algorithm, then permute both layers simultaneously (PBL).",
+    stages: [
+      {
+        id: 1,
+        title: 'Step 1: First Face (Any Color)',
+        subtitle: 'Build a Solid Face (Sides Do NOT Need to Match)',
+        goal: 'Form a solid white (or easiest color) face. Unlike Beginner method, the side colors DO NOT need to match yet!',
+        mnemonic: 'Usually takes only 2 to 4 intuitive turns. Look for bars and pairs during inspection!',
+        algorithm: "R U' R' F2 R2",
+        setupScramble: "R2 F2 R U R'",
+        demoMoves: "R U' R' F2 R2",
+        explanation:
+          'Because Ortega permutes both layers at the very end in Step 3, you do not need to worry about aligning the side colors of the first face! Just bring all 4 white stickers onto one face as fast as possible.',
+        filter: (sticker) => {
+          const p = sticker.userData.cubie.position;
+          return p.y <= 0.1;
+        },
+      },
+      {
+        id: 2,
+        title: 'Step 2: OLL (Orient Opposite Face)',
+        subtitle: 'One Algorithm for the 7 OLL Cases',
+        goal: 'Orient the opposite (yellow) face in a single algorithm. There are exactly 7 cases (Sune, Anti-Sune, H, Pi, T, U, L).',
+        mnemonic: "H Case: R2 U2 R U2 R2 | Pi Case: F R U R' U' R U R' U' F'",
+        algorithm: "R2 U2 R U2 R2 (H-Case OLL)",
+        setupScramble: "R2 U2 R' U2 R2",
+        demoMoves: "R2 U2 R U2 R2",
+        explanation:
+          'Both the top and bottom faces will now be solid colors! Identify the top corner orientation pattern and execute the matching OLL algorithm.',
+        filter: (sticker) => {
+          const p = sticker.userData.cubie.position;
+          return p.y >= 0.1;
+        },
+      },
+      {
+        id: 3,
+        title: 'Step 3: PBL (Permute Both Layers)',
+        subtitle: 'Simultaneous Two-Layer Finish',
+        goal: 'Permute both layers simultaneously in 1 fast algorithm to complete the 2×2 solve!',
+        mnemonic: "Both Adjacent: R2 U' B2 U2 R2 U' R2 | Both Diagonal: R2 F2 R2",
+        algorithm: "R2 U' B2 U2 R2 U' R2 (Adjacent/Adjacent PBL)",
+        setupScramble: "R2 U R2 U2 B2 U R2",
+        demoMoves: "R2 U' B2 U2 R2 U' R2",
+        explanation:
+          'Inspect both layers for bars of matching colors. If both top and bottom have an adjacent bar, hold them on Front and execute R2 U\' B2 U2 R2 U\' R2. If both have diagonal swaps, apply R2 F2 R2. In one step, the entire cube is solved!',
+        filter: (sticker) => true,
+      },
+    ],
+  },
 };

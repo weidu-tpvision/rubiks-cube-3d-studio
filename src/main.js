@@ -11,6 +11,7 @@ class App {
   constructor() {
     this.canvas = document.getElementById('webgl-canvas');
     this.viewport = document.getElementById('app-viewport') || document.body;
+    window.app = this;
     this.initThree();
     this.initCube();
     this.initSolver();
@@ -120,7 +121,11 @@ class App {
       },
     });
 
-    this.tutorialUI = new TutorialUI(this.rubiksCube, this.stepPlayer);
+    this.tutorialUI = new TutorialUI(this.rubiksCube, this.stepPlayer, {
+      onCubeDimensionChange: (dim) => {
+        this.controlsUI?.setCubeDimension(dim);
+      },
+    });
 
     this.controlsUI = new ControlsUI(
       this.rubiksCube,
@@ -143,6 +148,7 @@ class App {
       this.camera.aspect = width / height;
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(width, height);
+      this.renderer.render(this.scene, this.camera);
     };
 
     window.addEventListener('resize', updateSize);
@@ -152,7 +158,9 @@ class App {
       ro.observe(this.viewport);
     }
 
-    // Touch Mode Switch: Twist Cube vs Orbit Camera
+    this.viewport.addEventListener('transitionend', updateSize);
+
+    // Touch Mode Switch: Twist Cube vs Orbit Camera (convenience for mobile touchscreens without right-click)
     const touchModeBtn = document.getElementById('btn-touch-mode');
     if (touchModeBtn) {
       touchModeBtn.addEventListener('click', () => {

@@ -20,10 +20,51 @@
         <span class="logo-icon">🧊</span>
         <span class="logo-text">Rubik's 3D Studio</span>
       </div>
+      <!-- Cube Shape / Variation Dropdown -->
+      <div class="cube-dropdown-container">
+        <button id="btn-cube-dropdown" class="btn btn-cube-dropdown" title="Choose Cube Shape / Variation">
+          <span class="icon" id="btn-cube-icon">🧊</span>
+          <span id="btn-cube-label" class="cube-label">3×3 Cube</span>
+          <span class="dropdown-caret">▾</span>
+        </button>
+        <div id="cube-variation-menu" class="cube-variation-menu hidden">
+          <div class="menu-heading">Select Puzzle Shape</div>
+          <button id="btn-cube-3x3" class="cube-option active" data-dim="3" data-name="3×3 Cube" data-icon="🧊">
+            <span class="method-icon">🧊</span>
+            <div class="method-text">
+              <div class="method-name">3×3 Standard Cube</div>
+              <div class="method-hint">Classic Rubik's Cube • 6 faces, 26 pieces</div>
+            </div>
+          </button>
+          <button id="btn-cube-2x2" class="cube-option" data-dim="2" data-name="2×2 Cube" data-icon="🎲">
+            <span class="method-icon">🎲</span>
+            <div class="method-text">
+              <div class="method-name">2×2 Pocket Cube</div>
+              <div class="method-hint">Mini Cube • 8 corners, 0 centers</div>
+            </div>
+          </button>
+          <div class="menu-divider"></div>
+          <div class="menu-heading menu-future-heading">More Variations (Coming Soon)</div>
+          <button class="cube-option option-disabled" disabled title="Coming soon">
+            <span class="method-icon">🔮</span>
+            <div class="method-text">
+              <div class="method-name">4×4 Revenge <span class="badge-soon">Soon</span></div>
+              <div class="method-hint">Higher-order cube with parity</div>
+            </div>
+          </button>
+          <button class="cube-option option-disabled" disabled title="Coming soon">
+            <span class="method-icon">🔺</span>
+            <div class="method-text">
+              <div class="method-name">Pyraminx <span class="badge-soon">Soon</span></div>
+              <div class="method-hint">Tetrahedron shape puzzle</div>
+            </div>
+          </button>
+        </div>
+      </div>
     </div>
 
     <div class="header-right">
-      <button id="btn-touch-mode" class="btn btn-touch-mode" title="Touch Mode: Twist Face vs Orbit Camera">
+      <button id="btn-touch-mode" class="btn btn-touch-mode" title="Touch Mode: Twist Face vs Orbit Camera (Touchscreen / Android)">
         <span class="icon">✋</span> <span class="mode-text">Twist</span>
       </button>
       <button id="btn-scramble" class="btn" title="Scramble with 20 random moves">

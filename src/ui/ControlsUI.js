@@ -18,19 +18,42 @@ export class ControlsUI {
     this.isTimerRunning = false;
 
     this.initControls();
+    this.renderSolveMenu();
     this.initTimer();
   }
 
   initControls() {
+    // Cube Shape / Variation Dropdown toggle
+    const cubeMenuBtn = document.getElementById('btn-cube-dropdown');
+    const cubeMenu = document.getElementById('cube-variation-menu');
+
+    cubeMenuBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      cubeMenu?.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.cube-dropdown-container')) {
+        cubeMenu?.classList.add('hidden');
+      }
+    });
+
+    cubeMenu?.querySelectorAll('.cube-option[data-dim]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const dim = parseInt(btn.dataset.dim, 10);
+        this.setCubeDimension(dim);
+        cubeMenu?.classList.add('hidden');
+      });
+    });
+
     // Top Bar Actions
     document.getElementById('btn-scramble')?.addEventListener('click', () => this.scramble());
     document.getElementById('btn-reset')?.addEventListener('click', () => this.resetCube());
     document.getElementById('btn-solve-step')?.addEventListener('click', () => this.startStepByStepSolve());
 
-    // Solve Method Dropdown
+    // Solve Method Dropdown toggle
     const solveMenuBtn = document.getElementById('btn-solve-menu');
     const solveMenu = document.getElementById('solve-method-menu');
-    const solveLabel = document.getElementById('btn-solve-label');
 
     solveMenuBtn?.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -41,30 +64,6 @@ export class ControlsUI {
       if (!e.target.closest('.solve-dropdown-container')) {
         solveMenu?.classList.add('hidden');
       }
-    });
-
-    const methodLabels = {
-      kociemba: 'Solve: Optimal',
-      beginner: 'Solve: Beginner',
-      cfop: 'Solve: CFOP',
-      roux: 'Solve: Roux',
-    };
-
-    document.querySelectorAll('.method-option[data-method]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const method = btn.dataset.method;
-        this.selectedMethod = method;
-
-        document.querySelectorAll('.method-option').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-
-        if (solveLabel) {
-          solveLabel.textContent = methodLabels[method] || 'Solve Step-by-Step';
-        }
-
-        solveMenu?.classList.add('hidden');
-        this.startStepByStepSolve();
-      });
     });
 
     document.getElementById('btn-tutorial')?.addEventListener('click', () => {
@@ -127,7 +126,107 @@ export class ControlsUI {
     });
   }
 
+  setCubeDimension(dim) {
+    if (this.cube.dimension === dim) return;
+    this.player.stopAndClose();
+    this.cube.resetHighlights();
+    this.cube.setDimension(dim);
+    this.resetTimer();
+
+    // Update active state in cube shape dropdown
+    const cubeMenu = document.getElementById('cube-variation-menu');
+    const cubeLabel = document.getElementById('btn-cube-label');
+    const cubeIcon = document.getElementById('btn-cube-icon');
+
+    cubeMenu?.querySelectorAll('.cube-option[data-dim]').forEach(btn => {
+      const match = parseInt(btn.dataset.dim, 10) === dim;
+      btn.classList.toggle('active', match);
+      if (match) {
+        if (cubeLabel) cubeLabel.textContent = btn.dataset.name || `${dim}×${dim} Cube`;
+        if (cubeIcon) cubeIcon.textContent = btn.dataset.icon || '🧊';
+      }
+    });
+
+    this.selectedMethod = dim === 2 ? 'optimal' : 'kociemba';
+    this.renderSolveMenu();
+    this.setStatusMessage(`Switched to ${dim}×${dim} Cube.`);
+  }
+
+  renderSolveMenu() {
+    const solveMenu = document.getElementById('solve-method-menu');
+    const solveLabel = document.getElementById('btn-solve-label');
+    if (!solveMenu) return;
+
+    const is2x2 = this.cube.dimension === 2;
+    const methods = is2x2 ? [
+      { key: 'optimal', name: "Optimal (God's Algorithm)", hint: "≤ 11 moves • Mathematical shortest path", icon: "⚡", label: "Solve: Optimal" },
+      { key: 'beginner', name: "Beginner (Layer-by-Layer)", hint: "~15–20 moves • 3 standard learning stages", icon: "🔰", label: "Solve: Beginner" },
+      { key: 'ortega', name: "Ortega Method", hint: "~11–15 moves • Speedcubing (Face → OLL → PBL)", icon: "👑", label: "Solve: Ortega" },
+    ] : [
+      { key: 'kociemba', name: "Optimal (Kociemba)", hint: "~20 moves • Mathematical shortest path", icon: "⚡", label: "Solve: Optimal" },
+      { key: 'beginner', name: "Beginner (Layer-by-Layer)", hint: "~110–120 moves • 7 standard learning stages", icon: "🔰", label: "Solve: Beginner" },
+      { key: 'cfop', name: "CFOP / Fridrich", hint: "~70–75 moves • Cross → F2L → OLL → PLL", icon: "👑", label: "Solve: CFOP" },
+      { key: 'roux', name: "Roux Method", hint: "~70–75 moves • Left/Right Blocks & M-Slice", icon: "💡", label: "Solve: Roux" },
+    ];
+
+    const validKeys = methods.map(m => m.key);
+    if (!validKeys.includes(this.selectedMethod)) {
+      this.selectedMethod = validKeys[0];
+    }
+
+    const currentMethodObj = methods.find(m => m.key === this.selectedMethod) || methods[0];
+    if (solveLabel) {
+      solveLabel.textContent = currentMethodObj.label;
+    }
+
+    solveMenu.innerHTML = `
+      <div class="menu-heading">Select Solving Method (${is2x2 ? '2×2' : '3×3'})</div>
+      ${methods.map(m => `
+        <button class="method-option ${m.key === this.selectedMethod ? 'active' : ''}" data-method="${m.key}">
+          <span class="method-icon">${m.icon}</span>
+          <div class="method-text">
+            <div class="method-name">${m.name}</div>
+            <div class="method-hint">${m.hint}</div>
+          </div>
+        </button>
+      `).join('')}
+    `;
+
+    solveMenu.querySelectorAll('.method-option[data-method]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const method = btn.dataset.method;
+        this.selectedMethod = method;
+        const selObj = methods.find(m => m.key === method);
+        if (solveLabel && selObj) {
+          solveLabel.textContent = selObj.label;
+        }
+        solveMenu.querySelectorAll('.method-option').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        solveMenu.classList.add('hidden');
+        this.startStepByStepSolve();
+      });
+    });
+  }
+
   generateScramble(length = 20) {
+    if (this.cube.dimension === 2) {
+      const faces = ['U', 'R', 'F'];
+      const modifiers = ['', "'", '2'];
+      const moves = [];
+      let lastFace = '';
+      const len = 11;
+      for (let i = 0; i < len; i++) {
+        let face = faces[Math.floor(Math.random() * faces.length)];
+        while (face === lastFace) {
+          face = faces[Math.floor(Math.random() * faces.length)];
+        }
+        lastFace = face;
+        const mod = modifiers[Math.floor(Math.random() * modifiers.length)];
+        moves.push(face + mod);
+      }
+      return moves.join(' ');
+    }
+
     const faces = ['U', 'D', 'L', 'R', 'F', 'B'];
     const modifiers = ['', "'", '2'];
     const moves = [];

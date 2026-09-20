@@ -2,6 +2,7 @@ import * as CubeModule from 'cubejs';
 import { BeginnerSolver } from './BeginnerSolver.js';
 import { CFOPSolver } from './CFOPSolver.js';
 import { RouxSolver } from './RouxSolver.js';
+import { solver2x2 } from './Solver2x2.js';
 
 const Cube = CubeModule.default || CubeModule;
 
@@ -27,6 +28,15 @@ const MOVE_DESCRIPTIONS = {
   M:  'Turn Middle slice 90° downward (in L direction)',
   "M'": 'Turn Middle slice 90° upward (in R direction)',
   M2: 'Turn Middle slice 180°',
+  x:   'Rotate whole cube 90° upward (X axis)',
+  "x'": 'Rotate whole cube 90° downward (X axis)',
+  x2:  'Rotate whole cube 180° (X axis)',
+  y:   'Rotate whole cube 90° clockwise (Y axis)',
+  "y'": 'Rotate whole cube 90° counter-clockwise (Y axis)',
+  y2:  'Rotate whole cube 180° (Y axis)',
+  z:   'Rotate whole cube 90° clockwise (Z axis)',
+  "z'": 'Rotate whole cube 90° counter-clockwise (Z axis)',
+  z2:  'Rotate whole cube 180° (Z axis)',
 };
 
 export class SolverService {
@@ -69,6 +79,13 @@ export class SolverService {
   }
 
   solveFromFaceletString(faceletStr, method = 'kociemba') {
+    if (faceletStr && faceletStr.length === 24) {
+      if (solver2x2.isFaceletsSolved(faceletStr)) {
+        return { isSolved: true, steps: [], rawMoves: [], method, stages: [] };
+      }
+      return this.solve2x2(faceletStr, method);
+    }
+
     const solvedStr = 'UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB';
     if (faceletStr === solvedStr) {
       return { isSolved: true, steps: [], rawMoves: [], method, stages: [] };
@@ -98,6 +115,63 @@ export class SolverService {
         method,
       };
     }
+  }
+
+  solve2x2(faceletStr, method = 'optimal') {
+    let stageResults = [];
+    let methodName = "Optimal (God's Algorithm)";
+
+    if (method === 'beginner') {
+      methodName = 'Beginner (Layer-by-Layer)';
+      stageResults = solver2x2.solveBeginner(faceletStr);
+    } else if (method === 'ortega') {
+      methodName = 'Ortega Method (Speedcubing)';
+      stageResults = solver2x2.solveOrtega(faceletStr);
+    } else {
+      methodName = "Optimal (God's Algorithm)";
+      stageResults = solver2x2.solveOptimal(faceletStr);
+    }
+
+    const allRawMoves = [];
+    const steps = [];
+    const stagesMeta = [];
+
+    stageResults.forEach(st => {
+      const startIdx = steps.length;
+      st.moves.forEach(m => {
+        allRawMoves.push(m);
+        steps.push({
+          index: steps.length,
+          move: m,
+          inverseMove: this.getInverseMove(m),
+          description: this.describeMove(m),
+          stageIndex: st.stageIndex,
+          stageName: st.stageName,
+          stageTotal: stageResults.length,
+          stageDescription: st.description,
+        });
+      });
+
+      stagesMeta.push({
+        stageIndex: st.stageIndex,
+        stageName: st.stageName,
+        startMoveIndex: startIdx,
+        moveCount: st.moves.length,
+        description: st.description,
+      });
+    });
+
+    steps.forEach(s => (s.total = steps.length));
+
+    return {
+      isSolved: false,
+      steps,
+      rawMoves: allRawMoves,
+      solutionStr: allRawMoves.join(' '),
+      method,
+      methodName,
+      stages: stagesMeta,
+    };
   }
 
   solveWithKociemba(faceletStr) {

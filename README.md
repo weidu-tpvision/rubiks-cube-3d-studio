@@ -12,15 +12,29 @@ Available as both a **Native Windows Desktop Application (.exe)** and a **Modern
 
 ## ✨ Key Features
 
-### 🧩 4 Solving Methods (Optimal & Human)
+### 🧊 Puzzle Variations (3×3 Standard & 2×2 Pocket Cube)
+Switch between puzzle variations directly from the top **Puzzle Shape** dropdown menu (`[ 🧊 3×3 Cube ▾ ]`):
+- **3×3 Standard Cube**: Classic 6 faces, 26 pieces, 54 facelets. Full support for Kociemba Optimal, CFOP, Roux, and Beginner Layer-by-Layer methods.
+- **2×2 Pocket Cube**: 8 corners, 24 facelets. Solved with **Optimal BFS (God's Algorithm $\le 11$ moves)** in $<10\text{ms}$, **Ortega Method**, or **Beginner LBL**.
+- **Extensible Design**: Dropdown architecture ready for higher-order and non-cubic variations (4×4 Revenge, Pyraminx).
+
+### 🧩 Solving Methods (Optimal & Human)
 Select your preferred solving method directly from the top solver dropdown:
 
+#### 3×3 Methods:
 | Method | Stages | Typical Moves | Description |
 |---|:---:|:---:|---|
 | **⚡ Optimal (Kociemba)** | 1 | ~20–22 | Two-phase mathematical group theory solver finding the shortest path to solve. |
 | **🔰 Beginner (LBL)** | 7 | ~110–120 | The classic Layer-by-Layer method with intuitive stages and easy-to-learn algorithms. |
 | **👑 CFOP (Fridrich)** | 4 | ~70–75 | The world speedcubing standard: Cross → 4 First Two Layer (F2L) slots → OLL → PLL. |
 | **💡 Roux Method** | 4 | ~70–75 | Intuitive block-building & M-slice: First Block → Second Block → CMLL → LSE. |
+
+#### 2×2 Methods:
+| Method | Stages | Typical Moves | Description |
+|---|:---:|:---:|---|
+| **⚡ Optimal (God's Algorithm)** | 1 | $\le 11$ | High-speed bidirectional BFS finding the mathematically shortest solution. |
+| **🔰 Beginner (LBL)** | 3 | ~15–20 | First Layer → Orient Last Layer → Permute Last Layer. |
+| **🚀 Ortega Method** | 3 | ~12–16 | Solve any face → OLL opposite face → PBL (Permute Both Layers simultaneously). |
 
 ### 🎬 Interactive Step-by-Step Inspector Panel
 - **Left-Docked CAD-Style Inspector**: Keeps 100% of the vertical viewport clearance for the 3D cube with zero bottom occlusion.
@@ -40,10 +54,14 @@ Strict separation of mouse actions prevents accidental camera movement while tur
 | Action | Mouse / Keyboard | Description |
 |---|---|---|
 | **Turn Cube Face** | **Left-Click Drag** on piece | Click any outer piece and drag in the desired turn direction (22px responsive threshold). |
-| **Orbit 3D Camera** | **Right-Click Drag** anywhere | Smoothly rotates the 3D cube viewpoint from any angle. |
+| **Orbit 3D Camera** | **Right-Click Drag** anywhere<br>*(or Left-Click Drag on empty space)* | Smoothly rotates the 3D cube viewpoint from any angle. |
 | **Pan Camera** | **Shift + Right-Click** or **Ctrl + Right-Click** | Translates/pans the camera view across the screen. |
 | **Zoom / Dolly** | **Scroll Wheel** | Zooms camera in and out smoothly. |
 | **Camera Reset** | Click **🎥** in header | Restores default isometric perspective. |
+
+> **💡 Note on the Header Toggle (✋ Twist / 🔄 Orbit):**
+> - **Desktop**: Mouse controls already separate twisting (Left-Click) from camera rotation (Right-Click), so desktop users don't need this toggle.
+> - **Touchscreens / Android App**: Because mobile devices lack a physical right-click button, this button provides a dedicated **Orbit** mode so touch users can swipe anywhere on screen (even directly over the puzzle) to freely inspect all sides without accidentally turning a layer.
 
 ### 🎛️ Manual Move Pad & Keyboard Shortcuts
 - **On-Screen Control Pad** (bottom right):
@@ -134,7 +152,7 @@ The project includes an Android Studio Gradle project in the `android/` director
 **Mobile Features Included:**
 - **Auto-Rotation & Portrait Support**: Seamlessly transitions between portrait bottom-sheet UI and landscape widescreen.
 - **Touch Gesture Recognition**: 1-finger drag on cube faces to twist slices; 1-finger drag on background or 2-finger pinch/drag to orbit and zoom the camera.
-- **Touch Mode Switcher**: Quick on-screen toggle (✋ **Twist** vs 🔄 **Orbit**) for single-finger camera inspection.
+- **Touch Mode Switcher (✋ Twist vs 🔄 Orbit)**: Solves the lack of a physical right mouse button on touchscreens. Allows users to switch to Orbit mode and swipe anywhere on screen (including over the cube) to inspect angles without grabbing a layer.
 - **Haptic Feedback**: Subtle vibration upon completing slice turns.
 - **Android Hardware Back Button**: Closes the Tutorial drawer or Step Player before exiting the app.
 
@@ -145,9 +163,9 @@ The project includes an Android Studio Gradle project in the `android/` director
 - **Rendering Engine**: [Three.js](https://threejs.org/) (Custom cubie groups, canvas textures for center badges, PBR materials, soft shadows).
 - **Desktop Framework**: [Electron](https://www.electronjs.org/) (Standalone native window, offline-first).
 - **Build Tool**: [Vite](https://vitejs.dev/) (Lightning-fast HMR and production Rollup bundling).
-- **Solving Engine**:
-  - [cubejs](https://github.com/ldez/cubejs) (Herbert Kociemba Two-Phase mathematical solver).
-  - Custom algorithmic rule engines for Beginner Layer-by-Layer, CFOP, and Roux.
+- **Solving Engines**:
+  - **3×3 Solver**: [cubejs](https://github.com/ldez/cubejs) (Herbert Kociemba Two-Phase optimal group theory solver) and custom rule engines for Beginner Layer-by-Layer, CFOP (Fridrich), and Roux.
+  - **2×2 Solver**: Custom bidirectional Breadth-First Search (BFS) over corner permutation/orientation states (God's Algorithm $\le 11$ moves in $<10\text{ms}$), Ortega Method (OLL/PBL), and Beginner LBL.
 
 ---
 
