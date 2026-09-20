@@ -12,9 +12,15 @@
     "electron:build": "vite build && electron-packager . RubiksCubeStudio --platform=win32 --arch=x64 --out=release --overwrite --prune=true",
     "electron:build:win": "vite build && electron-packager . RubiksCubeStudio --platform=win32 --arch=x64 --out=release --overwrite --prune=true",
     "electron:build:linux": "vite build && electron-packager . RubiksCubeStudio --platform=linux --arch=x64 --out=release --overwrite --prune=true",
-    "electron:build:all": "vite build && electron-packager . RubiksCubeStudio --platform=win32,linux --arch=x64 --out=release --overwrite --prune=true"
+    "electron:build:all": "vite build && electron-packager . RubiksCubeStudio --platform=win32,linux --arch=x64 --out=release --overwrite --prune=true",
+    "android:sync": "vite build && cap sync android",
+    "android:build": "vite build && cap sync android && cd android && gradlew.bat assembleDebug",
+    "android:open": "cap open android"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/cli": "^8.5.2",
+    "@capacitor/core": "^8.5.2",
     "cubejs": "^1.3.2",
     "three": "^0.160.0"
   },

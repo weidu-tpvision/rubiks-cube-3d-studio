@@ -11,6 +11,8 @@ export class CubeInteraction {
     this.raycaster = new THREE.Raycaster();
     this.pointer = new THREE.Vector2();
 
+    this.touchMode = 'twist'; // 'twist' = 1-finger turns faces, bg rotates camera; 'orbit' = 1-finger always orbits view
+
     this.isPointerDown = false;
     this.isDraggingFace = false;
     this.startScreenPos = new THREE.Vector2();
@@ -22,6 +24,24 @@ export class CubeInteraction {
 
     this.initPointerEvents();
     this.initKeyboardEvents();
+  }
+
+  triggerHaptic(duration = 20) {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      try {
+        navigator.vibrate(duration);
+      } catch (_) {}
+    }
+  }
+
+  setTouchMode(mode) {
+    this.touchMode = mode;
+    return this.touchMode;
+  }
+
+  toggleTouchMode() {
+    this.touchMode = this.touchMode === 'twist' ? 'orbit' : 'twist';
+    return this.touchMode;
   }
 
   updateCursor(isHoveringTurnableLayer = false) {
@@ -48,16 +68,23 @@ export class CubeInteraction {
   onPointerDown(e) {
     if (!this.enabled || this.cube.isAnimating) return;
 
-    // Right-click: Handled strictly by OrbitControls to rotate the 3D cube
-    if (e.button === 2) {
+    const isTouch = e.pointerType === 'touch';
+
+    // Mouse Right-click: Handled strictly by OrbitControls to rotate the 3D cube
+    if (!isTouch && e.button === 2) {
       this.canvas.style.cursor = 'grabbing';
       return;
     }
 
-    // Strict FreeCAD style: Only Left-click (button 0) turns layers. Anything else is ignored.
-    if (e.button !== 0) return;
+    // Only Left-click or Touch can turn layers
+    if (!isTouch && e.button !== 0) return;
 
-    // Left-click strictly turns a layer when clicking on an edge or corner piece
+    // In mobile Orbit Mode: Always allow OrbitControls to rotate camera, ignore layer twisting
+    if (isTouch && this.touchMode === 'orbit') {
+      if (this.orbitControls) this.orbitControls.enabled = true;
+      return;
+    }
+
     const p = this.getPointerPos(e);
     this.pointer.set(p.x, p.y);
     this.startScreenPos.set(p.screenX, p.screenY);
@@ -74,7 +101,7 @@ export class CubeInteraction {
       cubiePos.z = Math.round(cubiePos.z);
 
       // Only edge or corner pieces can be turned (sum of abs coordinates >= 2).
-      // Center pieces and background do nothing on left-click.
+      // Center pieces do not turn slices.
       const isTurnableLayer = (Math.abs(cubiePos.x) + Math.abs(cubiePos.y) + Math.abs(cubiePos.z)) >= 2;
 
       if (isTurnableLayer) {
@@ -86,13 +113,24 @@ export class CubeInteraction {
 
         this.isPointerDown = true;
         this.isDraggingFace = true;
+
+        // When user is dragging to twist a face, temporarily pause OrbitControls so camera doesn't spin
+        if (this.orbitControls) {
+          this.orbitControls.enabled = false;
+        }
+        return;
       }
+    }
+
+    // If touched background or center piece on mobile, ensure OrbitControls rotates camera
+    if (isTouch && this.orbitControls) {
+      this.orbitControls.enabled = true;
     }
   }
 
   onPointerMove(e) {
-    // Hover cursor feedback: 'pointer' only over turnable layers, otherwise 'default'
-    if (!this.isPointerDown) {
+    // Hover cursor feedback on desktop
+    if (!this.isPointerDown && e.pointerType !== 'touch') {
       const p = this.getPointerPos(e);
       this.pointer.set(p.x, p.y);
       this.raycaster.setFromCamera(this.pointer, this.camera);
@@ -114,8 +152,8 @@ export class CubeInteraction {
     const dy = p.screenY - this.startScreenPos.y;
     const distance = Math.hypot(dx, dy);
 
-    // Responsive 22px threshold for turning
-    if (distance > 22) {
+    // Responsive 20px threshold for turning
+    if (distance > 20) {
       this.resolveFaceDrag(dx, dy);
       this.isDraggingFace = false;
     }
@@ -125,6 +163,9 @@ export class CubeInteraction {
     this.isPointerDown = false;
     this.isDraggingFace = false;
     this.canvas.style.cursor = 'default';
+    if (this.orbitControls) {
+      this.orbitControls.enabled = true;
+    }
   }
 
   projectVectorToScreen(vec3) {
@@ -200,9 +241,12 @@ export class CubeInteraction {
     const moveNotation = this.getNotationFromAxisAndPos(rotAxis, pos);
     if (moveNotation) {
       this.cube.twist(moveNotation);
+      this.triggerHaptic(25);
       if (this.onUserMove) this.onUserMove(moveNotation);
+      if (this.orbitControls) this.orbitControls.enabled = true;
       return true;
     }
+    if (this.orbitControls) this.orbitControls.enabled = true;
     return false;
   }
 

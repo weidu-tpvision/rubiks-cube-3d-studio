@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>3D Rubik's Cube Studio & Step-by-Step Solver</title>
   <link rel="stylesheet" href="/src/style.css" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧊</text></svg>">
@@ -18,16 +18,19 @@
     <div class="header-left">
       <div class="app-logo">
         <span class="logo-icon">🧊</span>
-        <span>Rubik's 3D Studio</span>
+        <span class="logo-text">Rubik's 3D Studio</span>
       </div>
     </div>
 
     <div class="header-right">
+      <button id="btn-touch-mode" class="btn btn-touch-mode" title="Touch Mode: Twist Face vs Orbit Camera">
+        <span class="icon">✋</span> <span class="mode-text">Twist</span>
+      </button>
       <button id="btn-scramble" class="btn" title="Scramble with 20 random moves">
-        <span class="icon">🔀</span> Scramble
+        <span class="icon">🔀</span> <span class="btn-label">Scramble</span>
       </button>
       <button id="btn-reset" class="btn" title="Reset cube to solved state">
-        <span class="icon">🔄</span> Reset
+        <span class="icon">🔄</span> <span class="btn-label">Reset</span>
       </button>
       <!-- Solve Step-by-Step with Method Selector Dropdown -->
       <div class="solve-dropdown-container">
@@ -70,7 +73,7 @@
         </div>
       </div>
       <button id="btn-tutorial" class="btn btn-accent" title="Interactive speedcubing guides (Beginner, CFOP, Roux)">
-        <span class="icon">🎓</span> Learn Methods
+        <span class="icon">🎓</span> <span class="btn-label">Learn</span>
       </button>
       <div id="cube-timer" class="timer-pill" title="Click to start/stop speedsolve timer">
         0.00s
@@ -118,6 +121,7 @@
 
   <!-- Right-Side Inspector Panel (Option 2) -->
   <aside id="step-player" class="inspector-panel hidden">
+    <div class="sheet-grabber"></div>
     <!-- Panel Header -->
     <div class="inspector-header">
       <div class="inspector-title-wrap">
@@ -175,6 +179,7 @@
 
   <!-- Tutorial / Educational Method Drawer -->
   <div id="tutorial-drawer" class="tutorial-drawer">
+    <div class="sheet-grabber"></div>
     <div class="drawer-header">
       <h2><span>🎓</span> Human Solving Methods</h2>
       <button id="btn-close-tutorial" class="player-close">✕</button>

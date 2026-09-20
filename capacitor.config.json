@@ -1,0 +1,13 @@
+{
+  "appId": "com.rubiks.cube3d",
+  "appName": "Rubik's Cube 3D",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "backgroundColor": "#0d1117",
+    "allowMixedContent": true
+  }
+}

@@ -114,6 +114,32 @@ npm run dev -- --host
 
 ---
 
+### 5. Native Android App (Capacitor)
+
+The project includes an Android Studio Gradle project in the `android/` directory:
+
+1. **Build web assets & sync to Android project:**
+   ```bash
+   npm run android:sync
+   ```
+2. **Open in Android Studio:**
+   ```bash
+   npm run android:open
+   ```
+   *(Or open the `android/` directory directly inside Android Studio).*
+3. **Build APK / Run on Device:**
+   - Plug in your Android phone with USB Debugging enabled, or start an emulator.
+   - Click the green **Run** (▶) button in Android Studio, or go to **Build > Build Bundle(s) / APK(s) > Build APK(s)** to generate a standalone `.apk`.
+
+**Mobile Features Included:**
+- **Auto-Rotation & Portrait Support**: Seamlessly transitions between portrait bottom-sheet UI and landscape widescreen.
+- **Touch Gesture Recognition**: 1-finger drag on cube faces to twist slices; 1-finger drag on background or 2-finger pinch/drag to orbit and zoom the camera.
+- **Touch Mode Switcher**: Quick on-screen toggle (✋ **Twist** vs 🔄 **Orbit**) for single-finger camera inspection.
+- **Haptic Feedback**: Subtle vibration upon completing slice turns.
+- **Android Hardware Back Button**: Closes the Tutorial drawer or Step Player before exiting the app.
+
+---
+
 ## 🛠️ Tech Stack & Architecture
 
 - **Rendering Engine**: [Three.js](https://threejs.org/) (Custom cubie groups, canvas textures for center badges, PBR materials, soft shadows).

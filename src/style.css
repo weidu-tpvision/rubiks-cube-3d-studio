@@ -59,6 +59,8 @@ body.has-tutorial-drawer #app-viewport {
   display: block;
   outline: none;
   cursor: default;
+  touch-action: none;
+  -webkit-touch-callout: none;
 }
 
 /* Header Bar */
@@ -196,6 +198,28 @@ body.has-player-dock .status-badge {
 
 .btn-accent:hover {
   background: linear-gradient(135deg, #34d399, #10b981);
+}
+
+.btn-touch-mode {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #e2e8f0;
+}
+
+.btn-touch-mode.mode-orbit-active {
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  border-color: #a78bfa;
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.4);
+}
+
+.sheet-grabber {
+  display: none;
+  width: 38px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.28);
+  margin: 8px auto 4px auto;
 }
 
 /* Solve Method Dropdown */
@@ -859,37 +883,6 @@ body.has-player-dock .status-badge {
   font-size: 0.95rem;
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .header-bar {
-    padding: 0 10px;
-  }
-  .status-badge {
-    display: none;
-  }
-  .move-pad {
-    bottom: 10px;
-    right: 10px;
-    width: 200px;
-    padding: 10px;
-  }
-  #step-player {
-    width: 100%;
-    top: auto;
-    bottom: 0;
-    max-height: 50vh;
-    overflow-y: auto;
-  }
-  .drawer-body {
-    grid-template-columns: 1fr;
-  }
-  .stage-list {
-    max-height: 160px;
-    border-right: none;
-    border-bottom: 1px solid var(--surface-border);
-  }
-}
-
 
 /* Method Tabs at top of Drawer */
 .method-tabs {
@@ -963,4 +956,160 @@ body.has-player-dock .status-badge {
   background: rgba(255, 255, 255, 0.08);
   color: #94a3b8;
   border: 1px solid var(--surface-border);
+}
+
+/* =========================================================
+   Mobile & Portrait Responsive Layout (Android & Touch Devices)
+   ========================================================= */
+@media (max-width: 768px), (orientation: portrait) {
+  .sheet-grabber {
+    display: block;
+  }
+
+  .header-bar {
+    height: auto;
+    min-height: 52px;
+    padding-top: max(8px, env(safe-area-inset-top));
+    padding-bottom: 6px;
+    padding-left: max(10px, env(safe-area-inset-left));
+    padding-right: max(10px, env(safe-area-inset-right));
+    gap: 6px;
+  }
+
+  .app-logo .logo-text {
+    display: none;
+  }
+
+  .app-logo .logo-icon {
+    font-size: 1.5rem;
+  }
+
+  .header-right {
+    gap: 5px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .header-right::-webkit-scrollbar {
+    display: none;
+  }
+
+  .header-right .btn {
+    padding: 6px 9px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+
+  .header-right .btn-label {
+    display: none;
+  }
+
+  .timer-pill {
+    padding: 5px 8px;
+    font-size: 0.8rem;
+  }
+
+  .status-badge {
+    display: none;
+  }
+
+  /* Bottom Sheet: Step Player */
+  #step-player {
+    position: fixed;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    top: auto !important;
+    width: 100% !important;
+    max-height: 58vh;
+    border-radius: 20px 20px 0 0;
+    border-left: none;
+    border-right: none;
+    border-top: 1px solid var(--surface-border);
+    padding: 4px 16px max(14px, env(safe-area-inset-bottom)) 16px;
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.65);
+    transform: translateY(0);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 50;
+    overflow-y: auto;
+  }
+
+  #step-player.hidden {
+    transform: translateY(105%) !important;
+    display: block !important;
+    pointer-events: none;
+  }
+
+  body.has-player-dock #app-viewport {
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+  }
+
+  /* Bottom Sheet: Tutorial Drawer */
+  #tutorial-drawer {
+    position: fixed;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    top: auto !important;
+    width: 100% !important;
+    max-height: 82vh;
+    border-radius: 20px 20px 0 0;
+    border-left: none;
+    border-right: none;
+    border-top: 1px solid var(--surface-border);
+    padding-bottom: max(14px, env(safe-area-inset-bottom));
+    box-shadow: 0 -12px 35px rgba(0, 0, 0, 0.7);
+    transform: translateY(105%);
+    transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 60;
+  }
+
+  #tutorial-drawer.open {
+    transform: translateY(0) !important;
+  }
+
+  body.has-tutorial-drawer #app-viewport {
+    right: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+  }
+
+  .drawer-body {
+    grid-template-columns: 1fr;
+    max-height: calc(82vh - 130px);
+    overflow-y: auto;
+  }
+
+  .stage-list {
+    max-height: 140px;
+    border-right: none;
+    border-bottom: 1px solid var(--surface-border);
+  }
+
+  /* Mobile Move Pad */
+  .move-pad {
+    bottom: max(10px, env(safe-area-inset-bottom));
+    right: max(10px, env(safe-area-inset-right));
+    width: 175px;
+    padding: 8px;
+    background: rgba(13, 17, 23, 0.92);
+    border-radius: 12px;
+  }
+
+  .move-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+  }
+
+  .move-btn {
+    padding: 6px 2px;
+    font-size: 0.8rem;
+  }
+
+  .move-pad-hint {
+    display: none;
+  }
 }

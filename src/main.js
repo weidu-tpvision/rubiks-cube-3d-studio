@@ -55,6 +55,12 @@ class App {
       RIGHT: THREE.MOUSE.ROTATE,
     };
 
+    // Mobile touch mapping: 1-finger rotates camera (when not twisting), 2-fingers pinch/pan
+    this.controls.touches = {
+      ONE: THREE.TOUCH.ROTATE,
+      TWO: THREE.TOUCH.DOLLY_PAN,
+    };
+
     // Prevent context menu on canvas so right-clicking doesn't show browser menu
     this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
@@ -145,6 +151,42 @@ class App {
       const ro = new ResizeObserver(() => updateSize());
       ro.observe(this.viewport);
     }
+
+    // Touch Mode Switch: Twist Cube vs Orbit Camera
+    const touchModeBtn = document.getElementById('btn-touch-mode');
+    if (touchModeBtn) {
+      touchModeBtn.addEventListener('click', () => {
+        const mode = this.interaction.toggleTouchMode();
+        const icon = touchModeBtn.querySelector('.icon');
+        const text = touchModeBtn.querySelector('.mode-text');
+        if (mode === 'orbit') {
+          if (icon) icon.textContent = '🔄';
+          if (text) text.textContent = 'Orbit';
+          touchModeBtn.classList.add('mode-orbit-active');
+        } else {
+          if (icon) icon.textContent = '✋';
+          if (text) text.textContent = 'Twist';
+          touchModeBtn.classList.remove('mode-orbit-active');
+        }
+        this.interaction.triggerHaptic(15);
+      });
+    }
+
+    // Android Hardware Back Button Handling
+    document.addEventListener('backbutton', (e) => {
+      const tutDrawer = document.getElementById('tutorial-drawer');
+      const stepPlayer = document.getElementById('step-player');
+      if (tutDrawer && !tutDrawer.classList.contains('hidden') && tutDrawer.classList.contains('open')) {
+        this.tutorialUI?.close();
+        e.preventDefault();
+        return;
+      }
+      if (stepPlayer && !stepPlayer.classList.contains('hidden')) {
+        this.stepPlayer?.stopAndClose();
+        e.preventDefault();
+        return;
+      }
+    });
   }
 
   animate() {
