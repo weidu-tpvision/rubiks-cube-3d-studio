@@ -12,7 +12,6 @@ export class ControlsUI {
     this.primeActive = false;
     this.doubleActive = false;
     this.wideActive = false;
-    this.sliceActive = false;
     this.selectedMethod = 'kociemba';
 
     this.timerInterval = null;
@@ -23,12 +22,10 @@ export class ControlsUI {
     this.renderSolveMenu();
     this.initTimer();
 
-    // Initialize wide & slice buttons visibility
+    // Initialize wide button visibility
     const wideToggle = document.getElementById('mod-wide');
-    const sliceToggle = document.getElementById('mod-slice');
     if (this.cube.dimension < 4) {
       wideToggle?.classList.add('hidden');
-      sliceToggle?.classList.add('hidden');
     }
   }
 
@@ -84,7 +81,6 @@ export class ControlsUI {
     // Move Pad Modifier Toggles
     const primeToggle = document.getElementById('mod-prime');
     const doubleToggle = document.getElementById('mod-double');
-    const sliceToggle = document.getElementById('mod-slice');
     const wideToggle = document.getElementById('mod-wide');
 
     primeToggle?.addEventListener('click', () => {
@@ -105,22 +101,9 @@ export class ControlsUI {
       }
     });
 
-    sliceToggle?.addEventListener('click', () => {
-      this.sliceActive = !this.sliceActive;
-      sliceToggle.classList.toggle('active', this.sliceActive);
-      if (this.sliceActive && this.wideActive) {
-        this.wideActive = false;
-        wideToggle?.classList.remove('active');
-      }
-    });
-
     wideToggle?.addEventListener('click', () => {
       this.wideActive = !this.wideActive;
       wideToggle.classList.toggle('active', this.wideActive);
-      if (this.wideActive && this.sliceActive) {
-        this.sliceActive = false;
-        sliceToggle?.classList.remove('active');
-      }
     });
 
     // Face Move Buttons
@@ -129,19 +112,13 @@ export class ControlsUI {
         const baseMove = btn.dataset.move;
         let finalMove = baseMove;
 
-        if (this.sliceActive && this.cube.dimension >= 4) {
-          finalMove = '2' + baseMove;
-          if (this.primeActive) finalMove += "'";
-          if (this.doubleActive) finalMove += '2';
-        } else {
-          if (this.wideActive && this.cube.dimension >= 4) finalMove += 'w';
-          if (this.primeActive) finalMove += "'";
-          if (this.doubleActive) finalMove += '2';
-        }
+        if (this.wideActive && this.cube.dimension >= 4) finalMove += 'w';
+        if (this.primeActive) finalMove += "'";
+        if (this.doubleActive) finalMove += '2';
 
         this.cube.twist(finalMove);
 
-        // Reset modifiers after click
+        // Reset single-move modifiers after click
         if (this.primeActive) {
           this.primeActive = false;
           primeToggle?.classList.remove('active');
@@ -149,14 +126,6 @@ export class ControlsUI {
         if (this.doubleActive) {
           this.doubleActive = false;
           doubleToggle?.classList.remove('active');
-        }
-        if (this.wideActive) {
-          this.wideActive = false;
-          wideToggle?.classList.remove('active');
-        }
-        if (this.sliceActive) {
-          this.sliceActive = false;
-          sliceToggle?.classList.remove('active');
         }
       });
     });
@@ -179,9 +148,8 @@ export class ControlsUI {
     this.cube.setDimension(dim);
     this.resetTimer();
 
-    // Toggle wide & slice button visibility for 4x4
+    // Toggle wide button visibility for 4x4
     const wideToggle = document.getElementById('mod-wide');
-    const sliceToggle = document.getElementById('mod-slice');
     if (wideToggle) {
       if (dim >= 4) {
         wideToggle.classList.remove('hidden');
@@ -189,15 +157,6 @@ export class ControlsUI {
         wideToggle.classList.add('hidden');
         this.wideActive = false;
         wideToggle.classList.remove('active');
-      }
-    }
-    if (sliceToggle) {
-      if (dim >= 4) {
-        sliceToggle.classList.remove('hidden');
-      } else {
-        sliceToggle.classList.add('hidden');
-        this.sliceActive = false;
-        sliceToggle.classList.remove('active');
       }
     }
 

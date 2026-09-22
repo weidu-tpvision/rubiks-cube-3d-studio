@@ -260,6 +260,12 @@ export class CubeInteraction {
     return false;
   }
 
+  isWideMode() {
+    if (this.cube.dimension < 4) return false;
+    const wideBtn = document.getElementById('mod-wide');
+    return wideBtn?.classList.contains('active') || false;
+  }
+
   getNotationFromAxisAndPos(rotAxis, pos) {
     const faces = ['U', 'D', 'F', 'B', 'R', 'L'];
     for (const f of faces) {
@@ -267,19 +273,25 @@ export class CubeInteraction {
       if (!normal) continue;
 
       if (this.cube.dimension === 4) {
+        // Check if dragged piece belongs to face f's side (outer layer 1.5 or inner layer 0.5)
         const dotPos = pos.dot(normal);
-        // Outer layer piece: dotPos > 1.0 (coordinate 1.5)
-        if (dotPos > 1.0) {
+        if (dotPos > 0.1) {
           const dot = rotAxis.dot(normal);
-          if (dot < -0.6) return f;
-          if (dot > 0.6) return f + "'";
-        }
-        // Inner layer piece: dotPos > 0.0 && dotPos < 1.0 (coordinate 0.5)
-        else if (dotPos > 0.0 && dotPos < 1.0) {
-          // Dragging inner slice turns ONLY the 2nd layer while keeping the other 3 stationary
-          const dot = rotAxis.dot(normal);
-          if (dot < -0.6) return '2' + f;
-          if (dot > 0.6) return '2' + f + "'";
+          if (dot < -0.6 || dot > 0.6) {
+            const isPrime = dot > 0.6;
+            const isWide = this.isWideMode();
+            if (isWide) {
+              return isPrime ? f + "w'" : f + 'w';
+            } else {
+              // Clicked outer layer piece (coordinate 1.5) -> turn outer layer 1 (f)
+              // Clicked inner piece (coordinate 0.5) -> turn 2nd layer slice (2f)
+              if (dotPos > 1.0) {
+                return isPrime ? f + "'" : f;
+              } else {
+                return isPrime ? '2' + f + "'" : '2' + f;
+              }
+            }
+          }
         }
       } else {
         // Check if pos belongs to this face slice
@@ -312,9 +324,19 @@ export class CubeInteraction {
       const isShift = e.shiftKey;
       const upper = key.toUpperCase();
 
+      if (upper === 'W' && this.cube.dimension >= 4) {
+        const wideBtn = document.getElementById('mod-wide');
+        wideBtn?.click();
+        e.preventDefault();
+        return;
+      }
+
       const validMoves = ['U', 'D', 'L', 'R', 'F', 'B'];
       if (validMoves.includes(upper)) {
-        const move = isShift ? `${upper}'` : upper;
+        const isWide = this.isWideMode();
+        let move = upper;
+        if (isWide && this.cube.dimension >= 4) move += 'w';
+        if (isShift) move += "'";
         this.cube.twist(move);
         if (this.onUserMove) this.onUserMove(move);
         e.preventDefault();

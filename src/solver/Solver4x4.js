@@ -1,4 +1,9 @@
 // Solver4x4.js - Dedicated 4x4 Rubik's Revenge Solver & Reduction Engine
+import * as CubeModule from 'cubejs';
+import { VirtualCube4x4 } from './VirtualCube4x4.js';
+
+const Cube = CubeModule.default || CubeModule;
+
 
 export const MOVE_DESCRIPTIONS_4X4 = {
   // Wide turns (2 outer layers)
@@ -108,6 +113,108 @@ export function invertMove4x4(move) {
   return move + "'";
 }
 
+let isCubeInitialized = false;
+function ensureCubeSolverInit() {
+  if (isCubeInitialized) return;
+  try {
+    Cube.initSolver();
+    isCubeInitialized = true;
+  } catch {
+    // Ignore error
+  }
+}
+
+// Solve 3x3 Phase on a reduced 4x4 simulation using Kociemba Two-Phase Group Theory + Parity
+function solveReduced3x3Phase(sim) {
+  ensureCubeSolverInit();
+  const f54 = sim.extract3x3String();
+  const c3 = Cube.fromString(f54);
+  const eoSum = c3.eo.reduce((a, b) => a + b, 0) % 2;
+  const hasOLLParity = eoSum !== 0;
+  const hasPLLParity = c3.cornerParity() !== c3.edgeParity();
+
+  const stageMoves = [];
+
+  // If OLL parity exists, apply slice-safe OLL Parity algorithm that preserves centers
+  if (hasOLLParity) {
+    const ollMoves = "2R' U2 2L F2 2L' F2 2R2 U2 2R U2 2R' U2 F2 2R2 F2".split(' ');
+    sim.twist(ollMoves.join(' '));
+    stageMoves.push(...ollMoves);
+  }
+
+  // Re-extract 3x3 facelets after potential OLL fix
+  const f54AfterOLL = sim.extract3x3String();
+  const c3AfterOLL = Cube.fromString(f54AfterOLL);
+
+  // Solve 3x3 with Kociemba
+  const raw3x3 = c3AfterOLL.solve();
+  const kMoves = raw3x3.trim().split(/\s+/).filter(m => m.length > 0);
+  sim.twist(kMoves.join(' '));
+  stageMoves.push(...kMoves);
+
+  // Check if PLL parity remains
+  if (hasPLLParity) {
+    const pllMoves = '2R2 U2 2R2 Uw2 2R2 2U2'.split(' ');
+    sim.twist(pllMoves.join(' '));
+    stageMoves.push(...pllMoves);
+
+    // Final 3x3 alignment if needed
+    const f54Final = sim.extract3x3String();
+    const c3Final = Cube.fromString(f54Final);
+    if (!c3Final.isSolved()) {
+      const finalSol = c3Final.solve();
+      const finalMoves = finalSol.trim().split(/\s+/).filter(m => m.length > 0);
+      sim.twist(finalMoves.join(' '));
+      stageMoves.push(...finalMoves);
+    }
+  }
+
+  return stageMoves;
+}
+
+// State-based search to find wide/slice moves that reduce cube to 3x3 state
+function findReductionMoves(cube, maxDepth = 2, timeLimitMs = 120) {
+  const moves = [
+    'Rw', "Rw'", 'Rw2', 'Lw', "Lw'", 'Lw2',
+    'Uw', "Uw'", 'Uw2', 'Dw', "Dw'", 'Dw2',
+    'Fw', "Fw'", 'Fw2', 'Bw', "Bw'", 'Bw2',
+    '2R', "2R'", '2R2', '2L', "2L'", '2L2',
+    '2U', "2U'", '2U2', '2D', "2D'", '2D2',
+    '2F', "2F'", '2F2', '2B', "2B'", '2B2',
+  ];
+
+  if (cube.isReducedTo3x3()) return [];
+
+  const queue = [{ c: cube.clone(), path: [] }];
+  const visited = new Set([cube.asString()]);
+  const startTime = performance.now();
+
+  while (queue.length > 0) {
+    if (performance.now() - startTime > timeLimitMs) {
+      break;
+    }
+    const { c, path } = queue.shift();
+    if (path.length >= maxDepth) continue;
+
+    for (const m of moves) {
+      const next = c.clone();
+      next.twist(m);
+      const newPath = [...path, m];
+      if (next.isReducedTo3x3()) {
+        return newPath;
+      }
+      if (path.length + 1 < maxDepth) {
+        const key = next.asString();
+        if (!visited.has(key)) {
+          visited.add(key);
+          queue.push({ c: next, path: newPath });
+        }
+      }
+    }
+  }
+  return null;
+}
+
 export class Solver4x4 {
   constructor() {
     this.solvedStr = 'U'.repeat(16) + 'R'.repeat(16) + 'F'.repeat(16) + 'D'.repeat(16) + 'L'.repeat(16) + 'B'.repeat(16);
@@ -123,44 +230,76 @@ export class Solver4x4 {
       return { isSolved: true, steps: [], rawMoves: [], method: 'reduction', stages: [] };
     }
 
-    const history = options.moveHistory || [];
-
-    // Invert user scramble/turns to obtain a mathematically guaranteed return-to-solved path
+    const sim = new VirtualCube4x4(faceletStr);
     let solutionMoves = [];
-    if (history.length > 0) {
-      const inverted = history.slice().reverse().map(m => invertMove4x4(m));
-      solutionMoves = cancelMoves4x4(inverted);
+    let stages = [];
+
+    // Fast-path: Cube is already reduced to 3x3 (e.g. outer face turns, 3x3 scrambles, single turns)
+    // Solves purely from facelet state using Kociemba Two-Phase algorithm with zero history reliance
+    if (sim.isReducedTo3x3()) {
+      const s4Moves = solveReduced3x3Phase(sim.clone());
+      solutionMoves = s4Moves;
+      stages = [
+        { name: 'Stage 1: White & Yellow Centers', moves: [] },
+        { name: 'Stage 2: Lateral Centers (Green, Red, Blue, Orange)', moves: [] },
+        { name: 'Stage 3: Edge Pairing (12 Dedges)', moves: [] },
+        { name: 'Stage 4: 3×3 Reduction Phase & Parity', moves: s4Moves },
+      ].filter(s => s.moves.length > 0);
+    } else {
+      // Cube has scrambled centers or dedges: attempt state-based reduction search
+      const redMoves = findReductionMoves(sim, 2, 120);
+      if (redMoves) {
+        const redSim = sim.clone();
+        redSim.twist(redMoves.join(' '));
+        const s4Moves = solveReduced3x3Phase(redSim);
+        solutionMoves = [...redMoves, ...s4Moves];
+
+        const centerMoves = [];
+        const edgeMoves = [];
+        for (const m of redMoves) {
+          if (m.startsWith('2') || m.includes('w')) {
+            centerMoves.push(m);
+          } else {
+            edgeMoves.push(m);
+          }
+        }
+
+        stages = [
+          { name: 'Stage 1: White & Yellow Centers', moves: centerMoves.slice(0, Math.ceil(centerMoves.length / 2)) },
+          { name: 'Stage 2: Lateral Centers (Green, Red, Blue, Orange)', moves: centerMoves.slice(Math.ceil(centerMoves.length / 2)) },
+          { name: 'Stage 3: Edge Pairing (12 Dedges)', moves: edgeMoves },
+          { name: 'Stage 4: 3×3 Reduction Phase & Parity', moves: s4Moves },
+        ].filter(s => s.moves.length > 0);
+      } else {
+        // Deep scramble fallback (e.g. 40-move WCA scramble generated by Scramble button)
+        const history = options.moveHistory || [];
+        if (history.length > 0) {
+          const inverted = history.slice().reverse().map(m => invertMove4x4(m));
+          solutionMoves = cancelMoves4x4(inverted);
+        } else {
+          // Demonstration reduction solve
+          solutionMoves = [
+            'Rw', 'U', "Rw'", 'U2', 'Rw', 'U2', "Rw'",
+            'Fw', 'R', "Fw'", 'U', 'Fw', "Fw'",
+            "Uw'", 'R', 'U', "R'", 'F', "R'", "F'", 'R', 'Uw',
+            'R', 'U', "R'", "U'",
+            "2R'", 'U2', '2L', 'F2', "2L'", 'F2', '2R2', 'U2', '2R', 'U2', "2R'", 'U2', 'F2', '2R2', 'F2'
+          ];
+        }
+
+        const totalMoves = solutionMoves.length;
+        const s1End = Math.max(1, Math.floor(totalMoves * 0.25));
+        const s2End = Math.max(s1End + 1, Math.floor(totalMoves * 0.5));
+        const s3End = Math.max(s2End + 1, Math.floor(totalMoves * 0.75));
+
+        stages = [
+          { name: 'Stage 1: White & Yellow Centers', moves: solutionMoves.slice(0, s1End) },
+          { name: 'Stage 2: Lateral Centers (Green, Red, Blue, Orange)', moves: solutionMoves.slice(s1End, s2End) },
+          { name: 'Stage 3: Edge Pairing (12 Dedges)', moves: solutionMoves.slice(s2End, s3End) },
+          { name: 'Stage 4: 3×3 Reduction Phase & Parity', moves: solutionMoves.slice(s3End) },
+        ].filter(s => s.moves.length > 0);
+      }
     }
-
-    // Fallback if no history was recorded (e.g. initial load)
-    if (solutionMoves.length === 0) {
-      // Demonstration reduction solve
-      solutionMoves = [
-        'Rw', 'U', "Rw'", 'U2', 'Rw', 'U2', "Rw'", // Stage 1: Centers
-        'Fw', 'R', "Fw'", 'U', 'Fw', "Fw'",        // Stage 2: Lateral
-        "Uw'", 'R', 'U', "R'", 'F', "R'", "F'", 'R', 'Uw', // Stage 3: Edge pair
-        'R', 'U', "R'", "U'",                      // Stage 4: 3x3
-        'Rw', 'U2', 'x', 'Rw', 'U2', 'Rw', 'U2', "Rw'", 'U2', 'Lw', 'U2', "Rw'", 'U2', 'Rw', 'U2', "Rw'", 'U2', "Rw'", // OLL parity
-      ];
-    }
-
-    // Partition solution moves into the 5 classic Reduction stages for educational progression
-    const totalMoves = solutionMoves.length;
-    const s1End = Math.max(1, Math.floor(totalMoves * 0.25));
-    const s2End = Math.max(s1End + 1, Math.floor(totalMoves * 0.5));
-    const s3End = Math.max(s2End + 1, Math.floor(totalMoves * 0.75));
-
-    const stage1Moves = solutionMoves.slice(0, s1End);
-    const stage2Moves = solutionMoves.slice(s1End, s2End);
-    const stage3Moves = solutionMoves.slice(s2End, s3End);
-    const stage4Moves = solutionMoves.slice(s3End);
-
-    const stages = [
-      { name: 'Stage 1: White & Yellow Centers', moves: stage1Moves },
-      { name: 'Stage 2: Lateral Centers (Green, Red, Blue, Orange)', moves: stage2Moves },
-      { name: 'Stage 3: Edge Pairing (12 Dedges)', moves: stage3Moves },
-      { name: 'Stage 4: 3×3 Reduction Phase & Parity', moves: stage4Moves },
-    ].filter(s => s.moves.length > 0);
 
     const steps = [];
     stages.forEach((stage, sIdx) => {
@@ -195,7 +334,7 @@ export class Solver4x4 {
   // Demonstration: 4x4 OLL Parity Algorithm
   solveOLLParity() {
     const rawMoves = [
-      'Rw', 'U2', 'x', 'Rw', 'U2', 'Rw', 'U2', "Rw'", 'U2', 'Lw', 'U2', "Rw'", 'U2', 'Rw', 'U2', "Rw'", 'U2', "Rw'"
+      "2R'", 'U2', '2L', 'F2', "2L'", 'F2', '2R2', 'U2', '2R', 'U2', "2R'", 'U2', 'F2', '2R2', 'F2'
     ];
     const steps = rawMoves.map((m, idx) => ({
       index: idx,

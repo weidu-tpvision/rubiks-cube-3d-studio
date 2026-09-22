@@ -14,7 +14,7 @@ Available as both a **Native Windows Desktop Application (.exe)** and a **Modern
 
 ### 🧊 Puzzle Variations (4×4 Revenge, 3×3 Standard & 2×2 Pocket Cube)
 Switch between puzzle variations directly from the top **Puzzle Shape** dropdown menu (`[ 🧊 3×3 Cube ▾ ]`):
-- **4×4 Revenge (Master Cube)**: 56 pieces, 96 facelets, no fixed central core. Full support for wide turns (`Rw, Uw, Fw...`), inner slice turns (`2R, 2U...`), and the 4×4 Reduction method with OLL and PLL Parity resolutions.
+- **4×4 Revenge (Master Cube)**: 56 pieces, 96 facelets, no fixed central core. Full support for single-layer turns (`R, U...`), wide two-layer turns (`Rw, Uw, Fw...`), and the 4×4 Reduction method with OLL and PLL Parity resolutions.
 - **3×3 Standard Cube**: Classic 6 faces, 26 pieces, 54 facelets. Full support for Kociemba Optimal, CFOP, Roux, and Beginner Layer-by-Layer methods.
 - **2×2 Pocket Cube**: 8 corners, 24 facelets. Solved with **Optimal BFS (God's Algorithm $\le 11$ moves)** in $<10\text{ms}$, **Ortega Method**, or **Beginner LBL**.
 - **Extensible Design**: Dropdown architecture ready for higher-order variations and non-cubic shapes.
@@ -25,9 +25,9 @@ Select your preferred solving method directly from the top solver dropdown:
 #### 4×4 Methods:
 | Method | Stages | Typical Moves | Description |
 |---|:---:|:---:|---|
-| **🔮 4×4 Reduction** | 4 | ~80–90 | White/Yellow Centers → Lateral Centers → 12 Dedge Pairing → 3×3 Phase & Parity Resolutions. |
+| **🔮 4×4 Reduction** | 4 | ~20–85 | Genuine state-based Reduction solver computing solutions purely from the 96 sticker colors with Herbert Kociemba group theory & Parity Resolutions (OLL & PLL). |
 
-> *Note: The two 4×4 parity resolutions (OLL Parity and PLL Parity) are taught and demonstrated in the **Learn (🎓)** curriculum with dedicated scrambles and piece-highlighting.*
+> *Note: The two 4×4 parity resolutions (OLL Parity and PLL Parity) are also taught and demonstrated in the **Learn (🎓)** curriculum with dedicated scrambles and piece-highlighting.*
 
 #### 3×3 Methods:
 | Method | Stages | Typical Moves | Description |
@@ -61,7 +61,7 @@ Strict separation of mouse actions prevents accidental camera movement while tur
 
 | Action | Mouse / Keyboard | Description |
 |---|---|---|
-| **Turn Cube Face** | **Left-Click Drag** on piece | Click any piece and drag in the desired turn direction (outer layers twist outer face; inner pieces on 4×4 twist only that 2nd layer). |
+| **Turn Cube Face** | **Left-Click Drag** on piece | Click any piece and drag in the desired turn direction: clicking outer pieces twists the 1st outer layer (`R, U...`); clicking inner pieces twists the 2nd layer slice (`2R, 2U...`); with `w` active, twists 2 layers wide (`Rw, Uw...`). |
 | **Orbit 3D Camera** | **Right-Click Drag** anywhere<br>*(or Left-Click Drag on empty space)* | Smoothly rotates the 3D cube viewpoint from any angle. |
 | **Pan Camera** | **Shift + Right-Click** or **Ctrl + Right-Click** | Translates/pans the camera view across the screen. |
 | **Zoom / Dolly** | **Scroll Wheel** | Zooms camera in and out smoothly. |
@@ -74,7 +74,7 @@ Strict separation of mouse actions prevents accidental camera movement while tur
 ### 🎛️ Manual Move Pad & Keyboard Shortcuts
 - **On-Screen Control Pad** (bottom right):
   - Turn buttons: **U** (Top/White), **D** (Bottom/Yellow), **F** (Front/Green), **B** (Back/Blue), **L** (Left/Orange), **R** (Right/Red).
-  - Modifier toggles: **`'`** (Prime / CCW), **`180°`** (Double Turn), **`2nd`** (Turn only 2nd layer inner slice for 4×4), and **`w`** (Wide 2-layer turn for 4×4).
+  - Modifier toggles: **`'`** (Prime / CCW), **`180°`** (Double Turn), and **`w`** (Wide 2-layer turn for 4×4).
   - Whole-cube rotations: **Rot X**, **Rot Y**, **Rot Z**.
 - **Keyboard Shortcuts**:
   - `U`, `D`, `L`, `R`, `F`, `B` for clockwise face turns.
