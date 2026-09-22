@@ -100,14 +100,19 @@ export class CubeInteraction {
         cubiePos.x = Math.round(cubiePos.x * 2) / 2;
         cubiePos.y = Math.round(cubiePos.y * 2) / 2;
         cubiePos.z = Math.round(cubiePos.z * 2) / 2;
+      } else if (this.cube.dimension === 4) {
+        const snapHalf = (v) => Math.round(v - 0.5) + 0.5;
+        cubiePos.x = snapHalf(cubiePos.x);
+        cubiePos.y = snapHalf(cubiePos.y);
+        cubiePos.z = snapHalf(cubiePos.z);
       } else {
         cubiePos.x = Math.round(cubiePos.x);
         cubiePos.y = Math.round(cubiePos.y);
         cubiePos.z = Math.round(cubiePos.z);
       }
 
-      // In 2x2 all 8 pieces are turnable corners. In 3x3, edges and corners (sum of abs >= 2).
-      const isTurnableLayer = this.cube.dimension === 2 || (Math.abs(cubiePos.x) + Math.abs(cubiePos.y) + Math.abs(cubiePos.z)) >= 2;
+      // In 2x2 and 4x4 all outer pieces are turnable. In 3x3, edges and corners (sum of abs >= 2).
+      const isTurnableLayer = this.cube.dimension === 2 || this.cube.dimension === 4 || (Math.abs(cubiePos.x) + Math.abs(cubiePos.y) + Math.abs(cubiePos.z)) >= 2;
 
       if (isTurnableLayer) {
         this.hitSticker = hit.object;
@@ -143,7 +148,7 @@ export class CubeInteraction {
       if (intersects.length > 0) {
         const cubiePos = new THREE.Vector3();
         intersects[0].object.parent.getWorldPosition(cubiePos);
-        const isTurnable = this.cube.dimension === 2 || (Math.abs(Math.round(cubiePos.x)) + Math.abs(Math.round(cubiePos.y)) + Math.abs(Math.round(cubiePos.z))) >= 2;
+        const isTurnable = this.cube.dimension === 2 || this.cube.dimension === 4 || (Math.abs(Math.round(cubiePos.x)) + Math.abs(Math.round(cubiePos.y)) + Math.abs(Math.round(cubiePos.z))) >= 2;
         this.updateCursor(isTurnable);
       } else {
         this.updateCursor(false);
@@ -261,18 +266,35 @@ export class CubeInteraction {
       const normal = this.cube.getCenterNormal(f);
       if (!normal) continue;
 
-      // Check if pos belongs to this face slice
-      const belongsToFace = this.cube.dimension === 2
-        ? pos.dot(normal) > 0.1
-        : Math.round(pos.dot(normal)) === 1;
+      if (this.cube.dimension === 4) {
+        const dotPos = pos.dot(normal);
+        // Outer layer piece: dotPos > 1.0 (coordinate 1.5)
+        if (dotPos > 1.0) {
+          const dot = rotAxis.dot(normal);
+          if (dot < -0.6) return f;
+          if (dot > 0.6) return f + "'";
+        }
+        // Inner layer piece: dotPos > 0.0 && dotPos < 1.0 (coordinate 0.5)
+        else if (dotPos > 0.0 && dotPos < 1.0) {
+          // Dragging inner slice turns ONLY the 2nd layer while keeping the other 3 stationary
+          const dot = rotAxis.dot(normal);
+          if (dot < -0.6) return '2' + f;
+          if (dot > 0.6) return '2' + f + "'";
+        }
+      } else {
+        // Check if pos belongs to this face slice
+        const belongsToFace = this.cube.dimension === 2
+          ? pos.dot(normal) > 0.1
+          : Math.round(pos.dot(normal)) === 1;
 
-      if (belongsToFace) {
-        // Check rotation direction relative to this face's outward normal
-        const dot = rotAxis.dot(normal);
-        if (dot < -0.6) {
-          return f;
-        } else if (dot > 0.6) {
-          return f + "'";
+        if (belongsToFace) {
+          // Check rotation direction relative to this face's outward normal
+          const dot = rotAxis.dot(normal);
+          if (dot < -0.6) {
+            return f;
+          } else if (dot > 0.6) {
+            return f + "'";
+          }
         }
       }
     }

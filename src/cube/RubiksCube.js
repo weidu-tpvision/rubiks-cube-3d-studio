@@ -21,6 +21,7 @@ export class RubiksCube {
 
     this.isAnimating = false;
     this.moveQueue = [];
+    this.moveHistory = [];
     this.animationSpeed = 220; // ms per 90-degree turn
     this.onMoveComplete = null;
     this.onQueueEmpty = null;
@@ -124,6 +125,61 @@ export class RubiksCube {
               if (def.face === 'D' && y < 0) isOuter = true;
               if (def.face === 'F' && z > 0) isOuter = true;
               if (def.face === 'B' && z < 0) isOuter = true;
+
+              if (isOuter) {
+                const colorInfo = FACE_COLORS[def.face];
+                const stickerMat = createStickerMaterial(colorInfo.hex);
+
+                const sticker = new THREE.Mesh(stickerGeometry, stickerMat);
+                sticker.position.set(...def.pos);
+                sticker.rotation.set(...def.rot);
+                sticker.castShadow = false;
+                sticker.receiveShadow = true;
+
+                sticker.userData = {
+                  faceChar: def.face,
+                  originalFace: def.face,
+                  cubie: cubie,
+                  localNormal: def.normal.clone(),
+                  defaultColor: colorInfo.hex,
+                };
+
+                cubie.add(sticker);
+                this.allStickers.push(sticker);
+              }
+            });
+
+            this.cubeGroup.add(cubie);
+            this.cubies.push(cubie);
+          }
+        }
+      }
+    } else if (this.dimension === 4) {
+      // 4x4 Rubik's Revenge: 56 visible pieces (8 corners, 24 edges, 24 centers)
+      const coords4 = [-1.5, -0.5, 0.5, 1.5];
+      for (const x of coords4) {
+        for (const y of coords4) {
+          for (const z of coords4) {
+            // Skip 8 internal core pieces
+            if (Math.abs(x) < 1.0 && Math.abs(y) < 1.0 && Math.abs(z) < 1.0) continue;
+
+            const cubie = new THREE.Group();
+            cubie.position.set(x, y, z);
+            cubie.userData = { initialCoord: { x, y, z } };
+
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.castShadow = true;
+            body.receiveShadow = true;
+            cubie.add(body);
+
+            faceDefs.forEach(def => {
+              let isOuter = false;
+              if (def.face === 'R' && x === 1.5) isOuter = true;
+              if (def.face === 'L' && x === -1.5) isOuter = true;
+              if (def.face === 'U' && y === 1.5) isOuter = true;
+              if (def.face === 'D' && y === -1.5) isOuter = true;
+              if (def.face === 'F' && z === 1.5) isOuter = true;
+              if (def.face === 'B' && z === -1.5) isOuter = true;
 
               if (isOuter) {
                 const colorInfo = FACE_COLORS[def.face];
@@ -280,6 +336,7 @@ export class RubiksCube {
       if (moveTypeOrParams.isWholeCube) return this.cubies;
       const normal = moveTypeOrParams.normal;
       const cubiePos = new THREE.Vector3();
+
       if (this.dimension === 2) {
         if (moveTypeOrParams.isSlice) return [];
         return this.cubies.filter(cubie => {
@@ -287,6 +344,31 @@ export class RubiksCube {
           return cubiePos.dot(normal) > 0.1;
         });
       }
+
+      if (this.dimension === 4) {
+        if (moveTypeOrParams.isWide) {
+          // Wide turn: rotates both outer layer (1.5) and inner layer (0.5)
+          return this.cubies.filter(cubie => {
+            cubie.getWorldPosition(cubiePos);
+            return cubiePos.dot(normal) > 0.1;
+          });
+        }
+        if (moveTypeOrParams.isInnerSlice) {
+          // Inner slice turn: rotates only the 2nd layer (0.5)
+          return this.cubies.filter(cubie => {
+            cubie.getWorldPosition(cubiePos);
+            const dot = cubiePos.dot(normal);
+            return dot > 0.1 && dot < 1.1;
+          });
+        }
+        // Outer face turn on 4x4: only layer 4 (1.5)
+        return this.cubies.filter(cubie => {
+          cubie.getWorldPosition(cubiePos);
+          return cubiePos.dot(normal) > 1.1;
+        });
+      }
+
+      // 3x3 standard
       const targetDot = moveTypeOrParams.isSlice ? 0 : 1;
       return this.cubies.filter(cubie => {
         cubie.getWorldPosition(cubiePos);
@@ -294,54 +376,55 @@ export class RubiksCube {
       });
     }
 
-    const base = moveTypeOrParams[0];
-    if (['x', 'y', 'z'].includes(base)) return this.cubies;
-
-    if (this.dimension === 2) {
-      if (['M', 'E', 'S'].includes(base)) return [];
-      const normal = this.getCenterNormal(base);
-      if (!normal) return [];
-      const cubiePos = new THREE.Vector3();
-      return this.cubies.filter(cubie => {
-        cubie.getWorldPosition(cubiePos);
-        return cubiePos.dot(normal) > 0.1;
-      });
-    }
-
-    let targetDot = 1;
-    let normalFace = base;
-    if (base === 'M') { normalFace = 'L'; targetDot = 0; }
-    if (base === 'E') { normalFace = 'D'; targetDot = 0; }
-    if (base === 'S') { normalFace = 'F'; targetDot = 0; }
-
-    const normal = this.getCenterNormal(normalFace);
-    if (!normal) return [];
-    const cubiePos = new THREE.Vector3();
-    return this.cubies.filter(cubie => {
-      cubie.getWorldPosition(cubiePos);
-      return Math.round(cubiePos.dot(normal)) === targetDot;
-    });
+    const params = this.getMoveParams(moveTypeOrParams);
+    return params ? this.getCubiesForMove(params) : [];
   }
 
   // Get rotation parameters: axis vector and angle
   getMoveParams(moveStr) {
-    const face = moveStr[0];
+    if (!moveStr) return null;
     const isPrime = moveStr.includes("'");
-    const isDouble = moveStr.includes('2');
+    const isDouble = moveStr.endsWith('2');
 
     // Whole-cube rotations
-    if (['x', 'y', 'z'].includes(face)) {
+    const firstChar = moveStr[0];
+    if (['x', 'y', 'z'].includes(firstChar)) {
       const axis = new THREE.Vector3(
-        face === 'x' ? 1 : 0,
-        face === 'y' ? 1 : 0,
-        face === 'z' ? 1 : 0
+        firstChar === 'x' ? 1 : 0,
+        firstChar === 'y' ? 1 : 0,
+        firstChar === 'z' ? 1 : 0
       );
       let baseAngle = -Math.PI / 2;
       let angle = isPrime ? -baseAngle : (isDouble ? baseAngle * 2 : baseAngle);
-      return { axis, angle, face, isPrime, isDouble, isWholeCube: true };
+      return { axis, angle, face: firstChar, isPrime, isDouble, isWholeCube: true };
     }
 
-    // Slice turns: M (between L and R, turns like L), E (turns like D), S (turns like F)
+    // 4x4 inner slice turn: e.g. '2R', '2R2', '2R''
+    if (moveStr.startsWith('2') && moveStr.length >= 2 && ['U', 'D', 'L', 'R', 'F', 'B'].includes(moveStr[1].toUpperCase())) {
+      const face = moveStr[1].toUpperCase();
+      const normal = this.getCenterNormal(face);
+      if (!normal) return null;
+      let baseAngle = -Math.PI / 2;
+      let angle = isPrime ? -baseAngle : (isDouble ? baseAngle * 2 : baseAngle);
+      return {
+        axis: normal,
+        angle,
+        face,
+        normal,
+        isPrime,
+        isDouble,
+        isInnerSlice: true,
+        isWide: false,
+        isSlice: false,
+        isWholeCube: false,
+      };
+    }
+
+    // Wide turns: e.g. 'Rw', 'Uw', or lowercase 'r', 'u', 'f', 'b', 'l', 'd'
+    const isWide = moveStr.includes('w') || ['u', 'd', 'l', 'r', 'f', 'b'].includes(firstChar);
+    const face = firstChar.toUpperCase();
+
+    // Slice turns on 3x3: M, E, S
     if (face === 'M' || face === 'E' || face === 'S') {
       const refFace = face === 'M' ? 'L' : (face === 'E' ? 'D' : 'F');
       const normal = this.getCenterNormal(refFace);
@@ -352,15 +435,17 @@ export class RubiksCube {
         axis: normal,
         angle,
         face,
+        normal,
         isPrime,
         isDouble,
-        normal,
         isSlice: true,
+        isInnerSlice: false,
+        isWide: false,
         isWholeCube: false,
       };
     }
 
-    // Normal face turns bound directly to the center piece with that letter
+    // Normal face turns or Wide turns bound to face normal
     const normal = this.getCenterNormal(face);
     if (!normal) return null;
 
@@ -371,9 +456,11 @@ export class RubiksCube {
       axis: normal,
       angle,
       face,
+      normal,
       isPrime,
       isDouble,
-      normal,
+      isWide: isWide && this.dimension >= 4,
+      isInnerSlice: false,
       isSlice: false,
       isWholeCube: false,
     };
@@ -385,6 +472,9 @@ export class RubiksCube {
     if (moves.length === 0) return;
 
     moves.forEach(m => {
+      if (options.record !== false) {
+        this.moveHistory.push(m);
+      }
       this.moveQueue.push({ move: m, options });
     });
 
@@ -394,10 +484,13 @@ export class RubiksCube {
   }
 
   // Execute immediately without animation
-  twistInstant(moveStr) {
+  twistInstant(moveStr, options = {}) {
     if (!moveStr) return;
     const moves = moveStr.trim().split(/\s+/).filter(m => m.length > 0);
     moves.forEach(m => {
+      if (options.record !== false) {
+        this.moveHistory.push(m);
+      }
       const params = this.getMoveParams(m);
       if (!params) return;
 
@@ -522,6 +615,11 @@ export class RubiksCube {
       cubie.position.x = Math.round(cubie.position.x * 2) / 2;
       cubie.position.y = Math.round(cubie.position.y * 2) / 2;
       cubie.position.z = Math.round(cubie.position.z * 2) / 2;
+    } else if (this.dimension === 4) {
+      const snapHalf = (v) => Math.round(v - 0.5) + 0.5;
+      cubie.position.x = snapHalf(cubie.position.x);
+      cubie.position.y = snapHalf(cubie.position.y);
+      cubie.position.z = snapHalf(cubie.position.z);
     } else {
       cubie.position.x = Math.round(cubie.position.x);
       cubie.position.y = Math.round(cubie.position.y);
@@ -552,6 +650,61 @@ export class RubiksCube {
     const faceNormals = { U, R, F, D, L, B };
     const tempNormal = new THREE.Vector3();
     const cubiePos = new THREE.Vector3();
+
+    if (this.dimension === 4) {
+      const faceAxes = {
+        U: { N: U, up: B, right: R },
+        R: { N: R, up: U, right: B },
+        F: { N: F, up: U, right: R },
+        D: { N: D, up: F, right: R },
+        L: { N: L, up: U, right: F },
+        B: { N: B, up: U, right: L },
+      };
+
+      const rowMults = [1.5, 0.5, -0.5, -1.5];
+      const colMults = [-1.5, -0.5, 0.5, 1.5];
+      const order = ['U', 'R', 'F', 'D', 'L', 'B'];
+      let result = '';
+
+      for (const faceKey of order) {
+        const { N, up, right } = faceAxes[faceKey];
+        const targetNormal = faceNormals[faceKey];
+
+        for (const r of rowMults) {
+          for (const c of colMults) {
+            const targetSlot = new THREE.Vector3()
+              .addScaledVector(N, 1.5)
+              .addScaledVector(up, r)
+              .addScaledVector(right, c);
+
+            let matchedSticker = null;
+            for (const cubie of this.cubies) {
+              cubie.getWorldPosition(cubiePos);
+              if (cubiePos.distanceTo(targetSlot) < 0.4) {
+                for (const child of cubie.children) {
+                  if (child.userData && child.userData.localNormal) {
+                    tempNormal.copy(child.userData.localNormal).applyQuaternion(cubie.quaternion);
+                    if (tempNormal.dot(targetNormal) > 0.7) {
+                      matchedSticker = child;
+                      break;
+                    }
+                  }
+                }
+                break;
+              }
+            }
+
+            if (matchedSticker) {
+              result += matchedSticker.userData.faceChar;
+            } else {
+              result += faceKey;
+            }
+          }
+        }
+      }
+
+      return result;
+    }
 
     if (this.dimension === 2) {
       const faceSlots2x2 = {
@@ -773,6 +926,7 @@ export class RubiksCube {
   reset() {
     this.activePivot = null;
     this.moveQueue = [];
+    this.moveHistory = [];
     this.isAnimating = false;
     this.buildCube();
     this.queueEmptyListeners.forEach(fn => {

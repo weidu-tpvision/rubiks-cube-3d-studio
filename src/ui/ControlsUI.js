@@ -11,6 +11,8 @@ export class ControlsUI {
 
     this.primeActive = false;
     this.doubleActive = false;
+    this.wideActive = false;
+    this.sliceActive = false;
     this.selectedMethod = 'kociemba';
 
     this.timerInterval = null;
@@ -20,6 +22,14 @@ export class ControlsUI {
     this.initControls();
     this.renderSolveMenu();
     this.initTimer();
+
+    // Initialize wide & slice buttons visibility
+    const wideToggle = document.getElementById('mod-wide');
+    const sliceToggle = document.getElementById('mod-slice');
+    if (this.cube.dimension < 4) {
+      wideToggle?.classList.add('hidden');
+      sliceToggle?.classList.add('hidden');
+    }
   }
 
   initControls() {
@@ -74,6 +84,8 @@ export class ControlsUI {
     // Move Pad Modifier Toggles
     const primeToggle = document.getElementById('mod-prime');
     const doubleToggle = document.getElementById('mod-double');
+    const sliceToggle = document.getElementById('mod-slice');
+    const wideToggle = document.getElementById('mod-wide');
 
     primeToggle?.addEventListener('click', () => {
       this.primeActive = !this.primeActive;
@@ -93,13 +105,39 @@ export class ControlsUI {
       }
     });
 
+    sliceToggle?.addEventListener('click', () => {
+      this.sliceActive = !this.sliceActive;
+      sliceToggle.classList.toggle('active', this.sliceActive);
+      if (this.sliceActive && this.wideActive) {
+        this.wideActive = false;
+        wideToggle?.classList.remove('active');
+      }
+    });
+
+    wideToggle?.addEventListener('click', () => {
+      this.wideActive = !this.wideActive;
+      wideToggle.classList.toggle('active', this.wideActive);
+      if (this.wideActive && this.sliceActive) {
+        this.sliceActive = false;
+        sliceToggle?.classList.remove('active');
+      }
+    });
+
     // Face Move Buttons
     document.querySelectorAll('.move-btn[data-move]').forEach(btn => {
       btn.addEventListener('click', () => {
         const baseMove = btn.dataset.move;
         let finalMove = baseMove;
-        if (this.primeActive) finalMove += "'";
-        if (this.doubleActive) finalMove += '2';
+
+        if (this.sliceActive && this.cube.dimension >= 4) {
+          finalMove = '2' + baseMove;
+          if (this.primeActive) finalMove += "'";
+          if (this.doubleActive) finalMove += '2';
+        } else {
+          if (this.wideActive && this.cube.dimension >= 4) finalMove += 'w';
+          if (this.primeActive) finalMove += "'";
+          if (this.doubleActive) finalMove += '2';
+        }
 
         this.cube.twist(finalMove);
 
@@ -111,6 +149,14 @@ export class ControlsUI {
         if (this.doubleActive) {
           this.doubleActive = false;
           doubleToggle?.classList.remove('active');
+        }
+        if (this.wideActive) {
+          this.wideActive = false;
+          wideToggle?.classList.remove('active');
+        }
+        if (this.sliceActive) {
+          this.sliceActive = false;
+          sliceToggle?.classList.remove('active');
         }
       });
     });
@@ -133,6 +179,28 @@ export class ControlsUI {
     this.cube.setDimension(dim);
     this.resetTimer();
 
+    // Toggle wide & slice button visibility for 4x4
+    const wideToggle = document.getElementById('mod-wide');
+    const sliceToggle = document.getElementById('mod-slice');
+    if (wideToggle) {
+      if (dim >= 4) {
+        wideToggle.classList.remove('hidden');
+      } else {
+        wideToggle.classList.add('hidden');
+        this.wideActive = false;
+        wideToggle.classList.remove('active');
+      }
+    }
+    if (sliceToggle) {
+      if (dim >= 4) {
+        sliceToggle.classList.remove('hidden');
+      } else {
+        sliceToggle.classList.add('hidden');
+        this.sliceActive = false;
+        sliceToggle.classList.remove('active');
+      }
+    }
+
     // Update active state in cube shape dropdown
     const cubeMenu = document.getElementById('cube-variation-menu');
     const cubeLabel = document.getElementById('btn-cube-label');
@@ -147,7 +215,7 @@ export class ControlsUI {
       }
     });
 
-    this.selectedMethod = dim === 2 ? 'optimal' : 'kociemba';
+    this.selectedMethod = dim === 2 ? 'optimal' : (dim === 4 ? 'reduction' : 'kociemba');
     this.renderSolveMenu();
     this.setStatusMessage(`Switched to ${dim}×${dim} Cube.`);
   }
@@ -157,17 +225,20 @@ export class ControlsUI {
     const solveLabel = document.getElementById('btn-solve-label');
     if (!solveMenu) return;
 
+    const is4x4 = this.cube.dimension === 4;
     const is2x2 = this.cube.dimension === 2;
     const methods = is2x2 ? [
       { key: 'optimal', name: "Optimal (God's Algorithm)", hint: "≤ 11 moves • Mathematical shortest path", icon: "⚡", label: "Solve: Optimal" },
       { key: 'beginner', name: "Beginner (Layer-by-Layer)", hint: "~15–20 moves • 3 standard learning stages", icon: "🔰", label: "Solve: Beginner" },
       { key: 'ortega', name: "Ortega Method", hint: "~11–15 moves • Speedcubing (Face → OLL → PBL)", icon: "👑", label: "Solve: Ortega" },
+    ] : (is4x4 ? [
+      { key: 'reduction', name: "4×4 Reduction Method", hint: "Centers → Dedges → 3×3 Stage & Parities", icon: "🔮", label: "Solve: Reduction" },
     ] : [
       { key: 'kociemba', name: "Optimal (Kociemba)", hint: "~20 moves • Mathematical shortest path", icon: "⚡", label: "Solve: Optimal" },
       { key: 'beginner', name: "Beginner (Layer-by-Layer)", hint: "~110–120 moves • 7 standard learning stages", icon: "🔰", label: "Solve: Beginner" },
       { key: 'cfop', name: "CFOP / Fridrich", hint: "~70–75 moves • Cross → F2L → OLL → PLL", icon: "👑", label: "Solve: CFOP" },
       { key: 'roux', name: "Roux Method", hint: "~70–75 moves • Left/Right Blocks & M-Slice", icon: "💡", label: "Solve: Roux" },
-    ];
+    ]);
 
     const validKeys = methods.map(m => m.key);
     if (!validKeys.includes(this.selectedMethod)) {
@@ -180,7 +251,7 @@ export class ControlsUI {
     }
 
     solveMenu.innerHTML = `
-      <div class="menu-heading">Select Solving Method (${is2x2 ? '2×2' : '3×3'})</div>
+      <div class="menu-heading">Select Solving Method (${this.cube.dimension}×${this.cube.dimension})</div>
       ${methods.map(m => `
         <button class="method-option ${m.key === this.selectedMethod ? 'active' : ''}" data-method="${m.key}">
           <span class="method-icon">${m.icon}</span>
@@ -221,6 +292,28 @@ export class ControlsUI {
           face = faces[Math.floor(Math.random() * faces.length)];
         }
         lastFace = face;
+        const mod = modifiers[Math.floor(Math.random() * modifiers.length)];
+        moves.push(face + mod);
+      }
+      return moves.join(' ');
+    }
+
+    if (this.cube.dimension === 4) {
+      const outerFaces = ['U', 'D', 'L', 'R', 'F', 'B'];
+      const wideFaces = ['Uw', 'Dw', 'Lw', 'Rw', 'Fw', 'Bw'];
+      const allFaces = [...outerFaces, ...wideFaces];
+      const modifiers = ['', "'", '2'];
+      const moves = [];
+      let lastBase = '';
+      const len = 40; // Standard WCA 4x4 scramble length
+      for (let i = 0; i < len; i++) {
+        let face = allFaces[Math.floor(Math.random() * allFaces.length)];
+        let base = face.replace('w', '');
+        while (base === lastBase) {
+          face = allFaces[Math.floor(Math.random() * allFaces.length)];
+          base = face.replace('w', '');
+        }
+        lastBase = base;
         const mod = modifiers[Math.floor(Math.random() * modifiers.length)];
         moves.push(face + mod);
       }

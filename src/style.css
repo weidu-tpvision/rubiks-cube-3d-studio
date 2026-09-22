@@ -483,13 +483,13 @@ body.has-player-dock .status-badge {
 
 .modifier-group {
   display: flex;
-  gap: 6px;
+  gap: 4px;
 }
 
 .mod-btn {
   flex: 1;
-  padding: 5px;
-  font-size: 0.82rem;
+  padding: 4px 5px;
+  font-size: 0.76rem;
   font-weight: 600;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--surface-border);
@@ -497,6 +497,7 @@ body.has-player-dock .status-badge {
   color: var(--text-muted);
   cursor: pointer;
   transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .mod-btn.active {
@@ -504,6 +505,10 @@ body.has-player-dock .status-badge {
   color: #ffffff;
   border-color: #60a5fa;
   box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
+}
+
+.mod-btn.hidden {
+  display: none;
 }
 
 .move-grid {

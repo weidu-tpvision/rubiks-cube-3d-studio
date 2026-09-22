@@ -357,4 +357,142 @@ export const TUTORIAL_METHODS = {
       },
     ],
   },
+  reduction4x4: {
+    cubeType: '4x4',
+    name: "4×4 Reduction Method",
+    shortName: "4×4 Reduction",
+    badge: "6 Stages • Standard Revenge Method",
+    desc: "The universal 4×4 solving method. Reduce the 4×4 into an equivalent 3×3 by solving all 6 center blocks (2×2 each) and pairing all 12 edge pairs (dedges), then solve with 3×3 algorithms and fix any parity cases.",
+    stages: [
+      {
+        id: 1,
+        title: 'Stage 1: White & Yellow Centers',
+        subtitle: 'Opposite Centers First',
+        goal: 'Solve the 4 white center pieces on the bottom/top, then solve the 4 yellow center pieces on the opposite face using slice half-turns without disturbing White.',
+        mnemonic: "Slice-and-Restore: Rw U Rw' (or Rw U2 Rw') to protect solved centers!",
+        algorithm: "Rw U Rw' U Rw U2 Rw'",
+        setupScramble: "Rw U2 Rw' U' Rw U' Rw'",
+        demoMoves: "Rw U Rw' U Rw U2 Rw'",
+        explanation:
+          'Unlike 3×3, 4×4 center pieces move freely and there is no fixed central core! Start by forming a 1×2 bar of white centers, then pair the second 1×2 bar and join them. Flip to the opposite face and solve Yellow using Rw U2 Rw\' to protect the solved White face.',
+        filter: (sticker) => {
+          const p = sticker.userData.cubie.position;
+          return Math.abs(p.x) <= 0.6 && Math.abs(p.z) <= 0.6 && Math.abs(p.y) >= 1.0;
+        },
+      },
+      {
+        id: 2,
+        title: 'Stage 2: Lateral Centers',
+        subtitle: 'Green, Red, Blue, Orange (Respect Color Scheme)',
+        goal: 'Solve the remaining 4 lateral center blocks. Note standard color order: with White on bottom and Yellow on top: Green -> Red -> Blue -> Orange (clockwise).',
+        mnemonic: "Commutator: Fw R Fw' preserves adjacent completed lateral faces!",
+        algorithm: "Fw R Fw' U' Fw R' Fw'",
+        setupScramble: "Fw R Fw' U Fw R' Fw'",
+        demoMoves: "Fw R Fw' U' Fw R' Fw'",
+        explanation:
+          'Build 1×2 center bars on the front face and insert them into their corresponding lateral faces using half-turn commutators like Fw R Fw\' so earlier centers are restored automatically.',
+        filter: (sticker) => {
+          const p = sticker.userData.cubie.position;
+          return (Math.abs(p.x) <= 0.6 && Math.abs(p.y) <= 0.6) ||
+                 (Math.abs(p.y) <= 0.6 && Math.abs(p.z) <= 0.6) ||
+                 (Math.abs(p.x) <= 0.6 && Math.abs(p.z) <= 0.6);
+        },
+      },
+      {
+        id: 3,
+        title: 'Stage 3: Edge Pairing (12 Dedges)',
+        subtitle: 'Slice - Flip - Slice-Back Technique',
+        goal: 'Pair up each matching pair of edge pieces (dedges) until all 12 composite 3×3-equivalent edges are completed.',
+        mnemonic: "Slice-Flip-Restore: Uw' (R U R' F R' F' R) Uw",
+        algorithm: "Uw' R U R' F R' F' R Uw",
+        setupScramble: "Uw' R' F R F' R U' R' Uw",
+        demoMoves: "Uw' R U R' F R' F' R Uw",
+        explanation:
+          'Place two matching edge pieces on the Front-Left and Front-Right positions. Slice with Uw\' to match the edge pieces together, execute the Flipping Algorithm (R U R\' F R\' F\' R) to flip the right edge and replace with an unsolved dedge, then slice back with Uw to restore all 6 center blocks!',
+        filter: (sticker) => {
+          const p = sticker.userData.cubie.position;
+          const absX = Math.abs(p.x);
+          const absY = Math.abs(p.y);
+          const absZ = Math.abs(p.z);
+          const isCorner = absX > 1.0 && absY > 1.0 && absZ > 1.0;
+          const isCenter = (absX < 1.0 && absY < 1.0) || (absY < 1.0 && absZ < 1.0) || (absX < 1.0 && absZ < 1.0);
+          return !isCorner && !isCenter;
+        },
+      },
+      {
+        id: 4,
+        title: 'Stage 4: 3×3 Reduction Phase',
+        subtitle: 'Solve as a Normal 3×3',
+        goal: 'With all 6 centers solved and all 12 dedges paired, the cube behaves identically to a 3×3! Solve using outer turns only (U, D, L, R, F, B).',
+        mnemonic: 'Use only single outer layer turns so paired dedges and centers stay intact!',
+        algorithm: "R U R' U' R' F R2 U' R' U' R U R' F' (T-Perm)",
+        setupScramble: "F R U' R' U R U R2 F' R U R U' R'",
+        demoMoves: "R U R' U' R' F R2 U' R' U' R U R' F'",
+        explanation:
+          'Now that composite edges and centers are assembled, treat each 2×2 center block as one center, and each 1×2 dedge as one edge piece. Solve using your favorite 3×3 method (Beginner, CFOP, or Roux).',
+        filter: (sticker) => true,
+      },
+      {
+        id: 5,
+        title: 'Stage 5: OLL Parity Resolution',
+        subtitle: 'Single Flipped Dedge (Impossible on 3×3)',
+        goal: 'Resolve the 4×4 OLL parity where a single edge pair is flipped in the top layer, which can never happen on a standard 3×3.',
+        mnemonic: "OLL Parity: Rw U2 x Rw U2 Rw U2 Rw' U2 Lw U2 Rw' U2 Rw U2 Rw' U2 Rw'",
+        algorithm: "Rw U2 x Rw U2 Rw U2 Rw' U2 Lw U2 Rw' U2 Rw U2 Rw' U2 Rw'",
+        setupScramble: "Rw U2 Rw U2 Rw' U2 Rw U2 Lw' U2 Rw U2 Rw' U2 Rw' U2 x' U2 Rw'",
+        demoMoves: "Rw U2 x Rw U2 Rw U2 Rw' U2 Lw U2 Rw' U2 Rw U2 Rw' U2 Rw'",
+        explanation:
+          'Because 4×4 has internal degrees of freedom, an odd number of slice edge swaps can leave a single dedge flipped. Hold the flipped dedge in Front-Top and execute the famous 15-move OLL Parity algorithm.',
+        filter: (sticker) => sticker.userData.cubie.position.y >= 1.0,
+      },
+      {
+        id: 6,
+        title: 'Stage 6: PLL Parity Resolution',
+        subtitle: 'Opposite Edge Swap (Impossible on 3×3)',
+        goal: 'Resolve the 4×4 PLL parity where two opposite dedges need to be swapped to complete the solve.',
+        mnemonic: "PLL Parity: 2R2 U2 2R2 Uw2 2R2 2U2",
+        algorithm: "2R2 U2 2R2 Uw2 2R2 2U2",
+        setupScramble: "2U2 2R2 Uw2 2R2 U2 2R2",
+        demoMoves: "2R2 U2 2R2 Uw2 2R2 2U2",
+        explanation:
+          'When two opposite edges are swapped in the last layer, apply the lightning-fast slice algorithm 2R2 U2 2R2 Uw2 2R2 2U2. It swaps Front-Top and Back-Top dedges in under 2 seconds!',
+        filter: (sticker) => sticker.userData.cubie.position.y >= 1.0,
+      },
+    ],
+  },
+  parity4x4: {
+    cubeType: '4x4',
+    name: "4×4 Parities Guide",
+    shortName: "4×4 Parities",
+    badge: "2 Parities • Speedcubing Algorithms",
+    desc: "Essential algorithms to overcome the two impossible 3×3 states on 4×4: OLL Parity (single flipped edge) and PLL Parity (opposite or adjacent two-edge swap).",
+    stages: [
+      {
+        id: 1,
+        title: 'OLL Parity: Single Flipped Dedge',
+        subtitle: 'The 15-move Wide-Turn Algorithm',
+        goal: 'Flip the Front-Top dedge without disturbing the rest of the F2L.',
+        mnemonic: "Rw U2 x Rw U2 Rw U2 Rw' U2 Lw U2 Rw' U2 Rw U2 Rw' U2 Rw'",
+        algorithm: "Rw U2 x Rw U2 Rw U2 Rw' U2 Lw U2 Rw' U2 Rw U2 Rw' U2 Rw'",
+        setupScramble: "Rw U2 Rw U2 Rw' U2 Rw U2 Lw' U2 Rw U2 Rw' U2 Rw' U2 x' U2 Rw'",
+        demoMoves: "Rw U2 x Rw U2 Rw U2 Rw' U2 Lw U2 Rw' U2 Rw U2 Rw' U2 Rw'",
+        explanation:
+          'Hold the flipped dedge at Front-Top. Each Rw turn rotates the two rightmost layers. Remember the rhythm: Rw U2 x, three Rw U2s, Lw U2, and four Rw U2s.',
+        filter: (sticker) => sticker.userData.cubie.position.y >= 1.0,
+      },
+      {
+        id: 2,
+        title: 'PLL Parity: Opposite Edge Swap',
+        subtitle: 'Inner-Slice & Wide Turn Algorithm',
+        goal: 'Swap Front-Top and Back-Top dedges to finish the cube.',
+        mnemonic: "2R2 U2 2R2 Uw2 2R2 2U2",
+        algorithm: "2R2 U2 2R2 Uw2 2R2 2U2",
+        setupScramble: "2U2 2R2 Uw2 2R2 U2 2R2",
+        demoMoves: "2R2 U2 2R2 Uw2 2R2 2U2",
+        explanation:
+          'Hold the cube with the two swapped dedges at Front-Top and Back-Top. Execute 2R2 (right inner slice 180°), U2, 2R2, Uw2 (top two layers 180°), 2R2, 2U2 (top inner slice 180°).',
+        filter: (sticker) => sticker.userData.cubie.position.y >= 1.0,
+      },
+    ],
+  },
 };

@@ -43,20 +43,27 @@
               <div class="method-hint">Mini Cube • 8 corners, 0 centers</div>
             </div>
           </button>
-          <div class="menu-divider"></div>
-          <div class="menu-heading menu-future-heading">More Variations (Coming Soon)</div>
-          <button class="cube-option option-disabled" disabled title="Coming soon">
+          <button id="btn-cube-4x4" class="cube-option" data-dim="4" data-name="4×4 Revenge" data-icon="🔮">
             <span class="method-icon">🔮</span>
             <div class="method-text">
-              <div class="method-name">4×4 Revenge <span class="badge-soon">Soon</span></div>
-              <div class="method-hint">Higher-order cube with parity</div>
+              <div class="method-name">4×4 Revenge</div>
+              <div class="method-hint">Master Cube • 56 pieces, center & parity solving</div>
             </div>
           </button>
+          <div class="menu-divider"></div>
+          <div class="menu-heading menu-future-heading">More Variations (Coming Soon)</div>
           <button class="cube-option option-disabled" disabled title="Coming soon">
             <span class="method-icon">🔺</span>
             <div class="method-text">
               <div class="method-name">Pyraminx <span class="badge-soon">Soon</span></div>
               <div class="method-hint">Tetrahedron shape puzzle</div>
+            </div>
+          </button>
+          <button class="cube-option option-disabled" disabled title="Coming soon">
+            <span class="method-icon">⭐</span>
+            <div class="method-text">
+              <div class="method-name">Megaminx <span class="badge-soon">Soon</span></div>
+              <div class="method-hint">Dodecahedron 12-sided puzzle</div>
             </div>
           </button>
         </div>
@@ -135,8 +142,10 @@
     <div class="move-pad-header">
       <span>Turn Controls</span>
       <div class="modifier-group">
-        <button id="mod-prime" class="mod-btn" title="Invert turn direction (Prime)">'</button>
-        <button id="mod-double" class="mod-btn" title="Double 180° turn">2</button>
+        <button id="mod-prime" class="mod-btn" title="Invert turn direction (Prime / CCW)">'</button>
+        <button id="mod-double" class="mod-btn" title="Double 180° turn (180°)">180°</button>
+        <button id="mod-slice" class="mod-btn hidden" title="Turn only 2nd layer inner slice (2)">2nd</button>
+        <button id="mod-wide" class="mod-btn hidden" title="Wide 2-layer turn (w)">w</button>
       </div>
     </div>
 

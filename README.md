@@ -12,14 +12,22 @@ Available as both a **Native Windows Desktop Application (.exe)** and a **Modern
 
 ## ✨ Key Features
 
-### 🧊 Puzzle Variations (3×3 Standard & 2×2 Pocket Cube)
+### 🧊 Puzzle Variations (4×4 Revenge, 3×3 Standard & 2×2 Pocket Cube)
 Switch between puzzle variations directly from the top **Puzzle Shape** dropdown menu (`[ 🧊 3×3 Cube ▾ ]`):
+- **4×4 Revenge (Master Cube)**: 56 pieces, 96 facelets, no fixed central core. Full support for wide turns (`Rw, Uw, Fw...`), inner slice turns (`2R, 2U...`), and the 4×4 Reduction method with OLL and PLL Parity resolutions.
 - **3×3 Standard Cube**: Classic 6 faces, 26 pieces, 54 facelets. Full support for Kociemba Optimal, CFOP, Roux, and Beginner Layer-by-Layer methods.
 - **2×2 Pocket Cube**: 8 corners, 24 facelets. Solved with **Optimal BFS (God's Algorithm $\le 11$ moves)** in $<10\text{ms}$, **Ortega Method**, or **Beginner LBL**.
-- **Extensible Design**: Dropdown architecture ready for higher-order and non-cubic variations (4×4 Revenge, Pyraminx).
+- **Extensible Design**: Dropdown architecture ready for higher-order variations and non-cubic shapes.
 
 ### 🧩 Solving Methods (Optimal & Human)
 Select your preferred solving method directly from the top solver dropdown:
+
+#### 4×4 Methods:
+| Method | Stages | Typical Moves | Description |
+|---|:---:|:---:|---|
+| **🔮 4×4 Reduction** | 4 | ~80–90 | White/Yellow Centers → Lateral Centers → 12 Dedge Pairing → 3×3 Phase & Parity Resolutions. |
+
+> *Note: The two 4×4 parity resolutions (OLL Parity and PLL Parity) are taught and demonstrated in the **Learn (🎓)** curriculum with dedicated scrambles and piece-highlighting.*
 
 #### 3×3 Methods:
 | Method | Stages | Typical Moves | Description |
@@ -38,12 +46,12 @@ Select your preferred solving method directly from the top solver dropdown:
 
 ### 🎬 Interactive Step-by-Step Inspector Panel
 - **Left-Docked CAD-Style Inspector**: Keeps 100% of the vertical viewport clearance for the 3D cube with zero bottom occlusion.
-- **Visual Move Guidance**: Clear move badges (`R'`, `U2`, etc.) accompanied by natural-language instructions ("Turn Right face 90° CCW").
+- **Visual Move Guidance**: Clear move badges (`R'`, `Rw`, `U2`, etc.) accompanied by natural-language instructions ("Turn Right 2 layers 90° clockwise").
 - **Full Playback Navigation**: Play, pause, step forward, step backward, or jump to the starting state.
 - **Fine Speed Controls**: Discrete speed multiplier slider (`0.25x`, `0.5x`, `0.75x`, `1.0x`, `1.5x`, `2.0x`, `3.0x`).
 
 ### 🎓 Learn Methods ("Load & Demonstrate on 3D Cube")
-- Step-by-step curriculum for **Beginner**, **CFOP**, and **Roux**.
+- Step-by-step curriculum for **4×4 Reduction & Parities**, **3×3 Beginner/CFOP/Roux**, and **2×2 Beginner/Ortega**.
 - Each stage includes goal explanations, mnemonics, and algorithms.
 - **"Load & Demonstrate on 3D Cube"**: Scrambles the cube to the exact textbook scenario, dims unrelated pieces to highlight target pieces, and loads the solution into the step player for turn-by-turn demonstration.
 - Highlights automatically restore when you start solving or resetting the cube.
@@ -53,7 +61,7 @@ Strict separation of mouse actions prevents accidental camera movement while tur
 
 | Action | Mouse / Keyboard | Description |
 |---|---|---|
-| **Turn Cube Face** | **Left-Click Drag** on piece | Click any outer piece and drag in the desired turn direction (22px responsive threshold). |
+| **Turn Cube Face** | **Left-Click Drag** on piece | Click any piece and drag in the desired turn direction (outer layers twist outer face; inner pieces on 4×4 twist only that 2nd layer). |
 | **Orbit 3D Camera** | **Right-Click Drag** anywhere<br>*(or Left-Click Drag on empty space)* | Smoothly rotates the 3D cube viewpoint from any angle. |
 | **Pan Camera** | **Shift + Right-Click** or **Ctrl + Right-Click** | Translates/pans the camera view across the screen. |
 | **Zoom / Dolly** | **Scroll Wheel** | Zooms camera in and out smoothly. |
@@ -66,7 +74,7 @@ Strict separation of mouse actions prevents accidental camera movement while tur
 ### 🎛️ Manual Move Pad & Keyboard Shortcuts
 - **On-Screen Control Pad** (bottom right):
   - Turn buttons: **U** (Top/White), **D** (Bottom/Yellow), **F** (Front/Green), **B** (Back/Blue), **L** (Left/Orange), **R** (Right/Red).
-  - Modifier toggles: **`'`** (Prime / Counter-Clockwise) and **`2`** (180° Double Turn).
+  - Modifier toggles: **`'`** (Prime / CCW), **`180°`** (Double Turn), **`2nd`** (Turn only 2nd layer inner slice for 4×4), and **`w`** (Wide 2-layer turn for 4×4).
   - Whole-cube rotations: **Rot X**, **Rot Y**, **Rot Z**.
 - **Keyboard Shortcuts**:
   - `U`, `D`, `L`, `R`, `F`, `B` for clockwise face turns.

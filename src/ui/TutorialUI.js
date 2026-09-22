@@ -7,7 +7,8 @@ export class TutorialUI {
     this.player = stepPlayer;
     this.methods = TUTORIAL_METHODS;
     this.onCubeDimensionChange = options.onCubeDimensionChange || null;
-    this.currentMethodKey = this.cube.dimension === 2 ? 'beginner2x2' : 'beginner';
+    const dim = this.cube.dimension;
+    this.currentMethodKey = dim === 2 ? 'beginner2x2' : (dim === 4 ? 'reduction4x4' : 'beginner');
     this.currentStage = this.methods[this.currentMethodKey].stages[0];
 
     this.drawer = document.getElementById('tutorial-drawer');
@@ -28,16 +29,20 @@ export class TutorialUI {
 
   open() {
     if (this.drawer) {
-      const is2x2 = this.cube.dimension === 2;
+      const dim = this.cube.dimension;
       const currentMethod = this.methods[this.currentMethodKey];
-      const methodIs2x2 = currentMethod?.cubeType === '2x2';
+      const methodCubeType = currentMethod?.cubeType || '3x3';
+      const targetType = dim === 2 ? '2x2' : (dim === 4 ? '4x4' : '3x3');
 
-      if (is2x2 && !methodIs2x2) {
-        this.currentMethodKey = 'beginner2x2';
-        this.currentStage = this.methods.beginner2x2.stages[0];
-      } else if (!is2x2 && methodIs2x2) {
-        this.currentMethodKey = 'beginner';
-        this.currentStage = this.methods.beginner.stages[0];
+      if (methodCubeType !== targetType) {
+        if (dim === 2) {
+          this.currentMethodKey = 'beginner2x2';
+        } else if (dim === 4) {
+          this.currentMethodKey = 'reduction4x4';
+        } else {
+          this.currentMethodKey = 'beginner';
+        }
+        this.currentStage = this.methods[this.currentMethodKey].stages[0];
       }
 
       this.renderMethodTabs();
@@ -60,8 +65,13 @@ export class TutorialUI {
     if (!this.methodTabsEl) return;
     this.methodTabsEl.innerHTML = '';
 
+    const currentDimType = this.cube.dimension === 2 ? '2x2' : (this.cube.dimension === 4 ? '4x4' : '3x3');
+
     Object.keys(this.methods).forEach(key => {
       const method = this.methods[key];
+      const methodCubeType = method.cubeType || '3x3';
+      if (methodCubeType !== currentDimType) return;
+
       const tab = document.createElement('button');
       tab.className = `method-tab ${key === this.currentMethodKey ? 'active' : ''}`;
       tab.textContent = method.shortName;
@@ -158,11 +168,12 @@ export class TutorialUI {
   demonstrateStage(stage, currentMethod) {
     this.close();
 
-    const targetDim = currentMethod.cubeType === '2x2' ? 2 : 3;
+    const targetDim = currentMethod.cubeType === '2x2' ? 2 : (currentMethod.cubeType === '4x4' ? 4 : 3);
     if (this.cube.dimension !== targetDim) {
-      this.cube.setDimension(targetDim);
       if (this.onCubeDimensionChange) {
         this.onCubeDimensionChange(targetDim);
+      } else {
+        this.cube.setDimension(targetDim);
       }
     }
 

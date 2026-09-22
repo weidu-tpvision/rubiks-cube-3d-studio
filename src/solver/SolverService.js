@@ -3,6 +3,7 @@ import { BeginnerSolver } from './BeginnerSolver.js';
 import { CFOPSolver } from './CFOPSolver.js';
 import { RouxSolver } from './RouxSolver.js';
 import { solver2x2 } from './Solver2x2.js';
+import { solver4x4, MOVE_DESCRIPTIONS_4X4 } from './Solver4x4.js';
 
 const Cube = CubeModule.default || CubeModule;
 
@@ -75,10 +76,18 @@ export class SolverService {
   }
 
   describeMove(move) {
+    if (MOVE_DESCRIPTIONS_4X4[move]) return MOVE_DESCRIPTIONS_4X4[move];
     return MOVE_DESCRIPTIONS[move] || `Rotate ${move}`;
   }
 
-  solveFromFaceletString(faceletStr, method = 'kociemba') {
+  solveFromFaceletString(faceletStr, method = 'kociemba', options = {}) {
+    if (faceletStr && faceletStr.length === 96) {
+      if (solver4x4.isFaceletsSolved(faceletStr)) {
+        return { isSolved: true, steps: [], rawMoves: [], method, stages: [] };
+      }
+      return this.solve4x4(faceletStr, method, options);
+    }
+
     if (faceletStr && faceletStr.length === 24) {
       if (solver2x2.isFaceletsSolved(faceletStr)) {
         return { isSolved: true, steps: [], rawMoves: [], method, stages: [] };
@@ -304,9 +313,20 @@ export class SolverService {
     };
   }
 
-  solve(rubiksCube, method = 'kociemba') {
+  solve4x4(faceletStr, method = 'reduction', options = {}) {
+    if (method === 'parity_oll') {
+      return solver4x4.solveOLLParity();
+    }
+    if (method === 'parity_pll') {
+      return solver4x4.solvePLLParity();
+    }
+    return solver4x4.solveReduction(faceletStr, options);
+  }
+
+  solve(rubiksCube, method = 'kociemba', options = {}) {
     const faceletStr = rubiksCube.getFaceletString();
-    return this.solveFromFaceletString(faceletStr, method);
+    const moveHistory = rubiksCube.moveHistory || options.moveHistory || [];
+    return this.solveFromFaceletString(faceletStr, method, { ...options, moveHistory });
   }
 }
 

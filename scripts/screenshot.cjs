@@ -109,5 +109,28 @@ app.whenReady().then(async () => {
   await new Promise(r => setTimeout(r, 600));
   await captureToFile('screenshot-2x2-learn.png');
 
+  // 5. Switch to 4x4 Mode, Scramble, and Solve (with step player open)
+  await win.webContents.executeJavaScript(`
+    (() => {
+      window.app.tutorialUI.close();
+      window.app.controlsUI.setCubeDimension(4);
+      const scramble4x4 = window.app.controlsUI.generateScramble(20);
+      window.app.rubiksCube.twistInstant(scramble4x4);
+      window.app.controlsUI.startStepByStepSolve();
+    })()
+  `);
+  await new Promise(r => setTimeout(r, 800));
+  await captureToFile('screenshot-4x4-solve.png');
+
+  // 6. Capture 4x4 Learn Methods Drawer (showing 4x4 Reduction & Parities)
+  await win.webContents.executeJavaScript(`
+    (() => {
+      window.app.stepPlayer.stopAndClose();
+      window.app.tutorialUI.open();
+    })()
+  `);
+  await new Promise(r => setTimeout(r, 600));
+  await captureToFile('screenshot-4x4-learn.png');
+
   app.quit();
 });
