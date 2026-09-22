@@ -2,7 +2,11 @@
 
 An interactive, high-performance 3D Rubik's Cube studio and speedcubing learning platform. Features realistic physics-based 3D graphics, FreeCAD-style viewport navigation, automated step-by-step solving across 4 proven methods, and an interactive visual tutorial curriculum with piece-highlighting demonstrations.
 
-Available as both a **Native Windows Desktop Application (.exe)** and a **Modern Web Application**.
+Available across all major platforms:
+- 🐧 **Ubuntu / Linux Desktop Application** (`.tar.gz` / standalone binary)
+- 🪟 **Native Windows Desktop Application** (`.exe`)
+- 🌐 **Modern Web Application** (Responsive PWA-ready browser app)
+- 📱 **Native Android Application** (`.apk` via Capacitor)
 
 ---
 
@@ -172,6 +176,7 @@ The project includes an Android Studio Gradle project in the `android/` director
 - **Desktop Framework**: [Electron](https://www.electronjs.org/) (Standalone native window, offline-first).
 - **Build Tool**: [Vite](https://vitejs.dev/) (Lightning-fast HMR and production Rollup bundling).
 - **Solving Engines**:
+  - **4×4 Solver**: Genuine state-based 4×4 Reduction solver (Centers → Edge pairing → 3×3 Phase via Herbert Kociemba Two-Phase Group Theory) with center-preserving slice OLL Parity and PLL Parity resolutions. Powered by headless simulation engine `VirtualCube4x4` with precomputed permutation cycles (`perms4x4.js`).
   - **3×3 Solver**: [cubejs](https://github.com/ldez/cubejs) (Herbert Kociemba Two-Phase optimal group theory solver) and custom rule engines for Beginner Layer-by-Layer, CFOP (Fridrich), and Roux.
   - **2×2 Solver**: Custom bidirectional Breadth-First Search (BFS) over corner permutation/orientation states (God's Algorithm $\le 11$ moves in $<10\text{ms}$), Ortega Method (OLL/PBL), and Beginner LBL.
 
