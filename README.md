@@ -78,11 +78,12 @@ Strict separation of mouse actions prevents accidental camera movement while tur
 ### 🎛️ Manual Move Pad & Keyboard Shortcuts
 - **On-Screen Control Pad** (bottom right):
   - Turn buttons: **U** (Top/White), **D** (Bottom/Yellow), **F** (Front/Green), **B** (Back/Blue), **L** (Left/Orange), **R** (Right/Red).
-  - Modifier toggles: **`'`** (Prime / CCW), **`180°`** (Double Turn), and **`w`** (Wide 2-layer turn for 4×4).
+  - Modifier toggles: **`'`** (Prime / CCW), **`180°`** (Double Turn), **`2nd`** (Turn only 2nd layer inner slice on 4×4), and **`w`** (Wide 2-layer turn for 4×4).
   - Whole-cube rotations: **Rot X**, **Rot Y**, **Rot Z**.
 - **Keyboard Shortcuts**:
-  - `U`, `D`, `L`, `R`, `F`, `B` for clockwise face turns.
-  - Hold `Shift` + key for prime counter-clockwise turns (e.g., `Shift + R` for `R'`).
+  - `U`, `D`, `L`, `R`, `F`, `B` for clockwise face turns (hold `Shift` for prime counter-clockwise turns).
+  - `2` key toggles 2nd layer slice mode on 4×4 (`2R`, `2U`...).
+  - `W` key toggles Wide 2-layer mode on 4×4 (`Rw`, `Uw`...).
 
 ---
 

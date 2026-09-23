@@ -266,6 +266,12 @@ export class CubeInteraction {
     return wideBtn?.classList.contains('active') || false;
   }
 
+  isSliceMode() {
+    if (this.cube.dimension < 4) return false;
+    const sliceBtn = document.getElementById('mod-slice');
+    return sliceBtn?.classList.contains('active') || false;
+  }
+
   getNotationFromAxisAndPos(rotAxis, pos) {
     const faces = ['U', 'D', 'F', 'B', 'R', 'L'];
     for (const f of faces) {
@@ -331,11 +337,23 @@ export class CubeInteraction {
         return;
       }
 
+      if (key === '2' && this.cube.dimension >= 4) {
+        const sliceBtn = document.getElementById('mod-slice');
+        sliceBtn?.click();
+        e.preventDefault();
+        return;
+      }
+
       const validMoves = ['U', 'D', 'L', 'R', 'F', 'B'];
       if (validMoves.includes(upper)) {
+        const isSlice = this.isSliceMode();
         const isWide = this.isWideMode();
         let move = upper;
-        if (isWide && this.cube.dimension >= 4) move += 'w';
+        if (isSlice && this.cube.dimension >= 4) {
+          move = '2' + upper;
+        } else if (isWide && this.cube.dimension >= 4) {
+          move += 'w';
+        }
         if (isShift) move += "'";
         this.cube.twist(move);
         if (this.onUserMove) this.onUserMove(move);
