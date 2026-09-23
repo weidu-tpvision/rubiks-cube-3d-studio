@@ -50,15 +50,15 @@
               <div class="method-hint">Master Cube • 56 pieces, center & parity solving</div>
             </div>
           </button>
-          <div class="menu-divider"></div>
-          <div class="menu-heading menu-future-heading">More Variations (Coming Soon)</div>
-          <button class="cube-option option-disabled" disabled title="Coming soon">
+          <button id="btn-cube-pyraminx" class="cube-option" data-shape="pyraminx" data-name="Pyraminx" data-icon="🔺">
             <span class="method-icon">🔺</span>
             <div class="method-text">
-              <div class="method-name">Pyraminx <span class="badge-soon">Soon</span></div>
-              <div class="method-hint">Tetrahedron shape puzzle</div>
+              <div class="method-name">Pyraminx</div>
+              <div class="method-hint">Tetrahedron shape puzzle • 4 faces, 14 pieces</div>
             </div>
           </button>
+          <div class="menu-divider"></div>
+          <div class="menu-heading menu-future-heading">More Variations (Coming Soon)</div>
           <button class="cube-option option-disabled" disabled title="Coming soon">
             <span class="method-icon">⭐</span>
             <div class="method-text">
@@ -149,7 +149,7 @@
       </div>
     </div>
 
-    <div class="move-grid">
+    <div id="move-grid-cube" class="move-grid">
       <button class="move-btn" data-move="U">U<span class="sub">Top</span></button>
       <button class="move-btn" data-move="D">D<span class="sub">Bottom</span></button>
       <button class="move-btn" data-move="F">F<span class="sub">Front</span></button>
@@ -158,13 +158,24 @@
       <button class="move-btn" data-move="R">R<span class="sub">Right</span></button>
     </div>
 
+    <div id="move-grid-pyraminx" class="move-grid pyra-move-grid hidden">
+      <button class="move-btn" data-move="U">U<span class="sub">Top</span></button>
+      <button class="move-btn" data-move="L">L<span class="sub">Left</span></button>
+      <button class="move-btn" data-move="R">R<span class="sub">Right</span></button>
+      <button class="move-btn" data-move="B">B<span class="sub">Back</span></button>
+      <button class="move-btn move-btn-tip" data-move="u">u<span class="sub">Tip U</span></button>
+      <button class="move-btn move-btn-tip" data-move="l">l<span class="sub">Tip L</span></button>
+      <button class="move-btn move-btn-tip" data-move="r">r<span class="sub">Tip R</span></button>
+      <button class="move-btn move-btn-tip" data-move="b">b<span class="sub">Tip B</span></button>
+    </div>
+
     <div class="rot-group">
       <button class="rot-btn" data-rot="x">Rot X</button>
       <button class="rot-btn" data-rot="y">Rot Y</button>
       <button class="rot-btn" data-rot="z">Rot Z</button>
     </div>
 
-    <div class="move-pad-hint">
+    <div id="move-pad-hint" class="move-pad-hint">
       💡 Drag faces directly or use keys <strong>U, D, L, R, F, B</strong> (Shift for Prime).
     </div>
   </div>

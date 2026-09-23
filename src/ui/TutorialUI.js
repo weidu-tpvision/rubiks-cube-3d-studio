@@ -7,8 +7,9 @@ export class TutorialUI {
     this.player = stepPlayer;
     this.methods = TUTORIAL_METHODS;
     this.onCubeDimensionChange = options.onCubeDimensionChange || null;
+    const isPyra = this.cube.puzzleType === 'pyraminx';
     const dim = this.cube.dimension;
-    this.currentMethodKey = dim === 2 ? 'beginner2x2' : (dim === 4 ? 'reduction4x4' : 'beginner');
+    this.currentMethodKey = isPyra ? 'pyraminxBeginner' : (dim === 2 ? 'beginner2x2' : (dim === 4 ? 'reduction4x4' : 'beginner'));
     this.currentStage = this.methods[this.currentMethodKey].stages[0];
 
     this.drawer = document.getElementById('tutorial-drawer');
@@ -29,13 +30,16 @@ export class TutorialUI {
 
   open() {
     if (this.drawer) {
+      const isPyra = this.cube.puzzleType === 'pyraminx';
       const dim = this.cube.dimension;
       const currentMethod = this.methods[this.currentMethodKey];
       const methodCubeType = currentMethod?.cubeType || '3x3';
-      const targetType = dim === 2 ? '2x2' : (dim === 4 ? '4x4' : '3x3');
+      const targetType = isPyra ? 'pyraminx' : (dim === 2 ? '2x2' : (dim === 4 ? '4x4' : '3x3'));
 
       if (methodCubeType !== targetType) {
-        if (dim === 2) {
+        if (targetType === 'pyraminx') {
+          this.currentMethodKey = 'pyraminxBeginner';
+        } else if (dim === 2) {
           this.currentMethodKey = 'beginner2x2';
         } else if (dim === 4) {
           this.currentMethodKey = 'reduction4x4';
@@ -65,7 +69,7 @@ export class TutorialUI {
     if (!this.methodTabsEl) return;
     this.methodTabsEl.innerHTML = '';
 
-    const currentDimType = this.cube.dimension === 2 ? '2x2' : (this.cube.dimension === 4 ? '4x4' : '3x3');
+    const currentDimType = this.cube.puzzleType === 'pyraminx' ? 'pyraminx' : (this.cube.dimension === 2 ? '2x2' : (this.cube.dimension === 4 ? '4x4' : '3x3'));
 
     Object.keys(this.methods).forEach(key => {
       const method = this.methods[key];

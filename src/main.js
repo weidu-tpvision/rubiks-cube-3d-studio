@@ -204,6 +204,10 @@ class App {
   }
 }
 
-window.addEventListener('DOMContentLoaded', () => {
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', () => {
+    new App();
+  });
+} else {
   new App();
-});
+}

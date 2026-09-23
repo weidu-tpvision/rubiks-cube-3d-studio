@@ -48,10 +48,15 @@ export class ControlsUI {
       }
     });
 
-    cubeMenu?.querySelectorAll('.cube-option[data-dim]').forEach(btn => {
+    cubeMenu?.querySelectorAll('.cube-option:not(.option-disabled)').forEach(btn => {
       btn.addEventListener('click', () => {
-        const dim = parseInt(btn.dataset.dim, 10);
-        this.setCubeDimension(dim);
+        const shape = btn.dataset.shape || 'cube';
+        const dim = parseInt(btn.dataset.dim, 10) || 3;
+        if (shape === 'pyraminx') {
+          this.setPuzzle('pyraminx');
+        } else {
+          this.setPuzzle('cube', dim);
+        }
         cubeMenu?.classList.add('hidden');
       });
     });
@@ -129,7 +134,9 @@ export class ControlsUI {
         const baseMove = btn.dataset.move;
         let finalMove = baseMove;
 
-        if (this.sliceActive && this.cube.dimension >= 4) {
+        if (this.cube.puzzleType === 'pyraminx') {
+          if (this.primeActive) finalMove += "'";
+        } else if (this.sliceActive && this.cube.dimension >= 4) {
           finalMove = '2' + baseMove;
           if (this.primeActive) finalMove += "'";
           if (this.doubleActive) finalMove += '2';
@@ -165,51 +172,94 @@ export class ControlsUI {
   }
 
   setCubeDimension(dim) {
-    if (this.cube.dimension === dim) return;
+    this.setPuzzle('cube', dim);
+  }
+
+  setPuzzle(shape, dim = 3) {
+    const isPyra = shape === 'pyraminx';
+    if (!isPyra && this.cube.puzzleType === 'cube' && this.cube.dimension === dim) return;
+    if (isPyra && this.cube.puzzleType === 'pyraminx') return;
+
     this.player.stopAndClose();
     this.cube.resetHighlights();
-    this.cube.setDimension(dim);
+
+    if (isPyra) {
+      this.cube.setPuzzleType('pyraminx');
+    } else {
+      this.cube.setPuzzleType('cube', dim);
+    }
+    this.resetCamera();
     this.resetTimer();
 
-    // Toggle wide & slice button visibility for 4x4
+    // Toggle wide, slice, double buttons and move grids
     const wideToggle = document.getElementById('mod-wide');
     const sliceToggle = document.getElementById('mod-slice');
-    if (wideToggle) {
-      if (dim >= 4) {
-        wideToggle.classList.remove('hidden');
-      } else {
-        wideToggle.classList.add('hidden');
-        this.wideActive = false;
-        wideToggle.classList.remove('active');
+    const doubleToggle = document.getElementById('mod-double');
+    const gridCube = document.getElementById('move-grid-cube');
+    const gridPyra = document.getElementById('move-grid-pyraminx');
+    const padHint = document.getElementById('move-pad-hint');
+
+    if (isPyra) {
+      wideToggle?.classList.add('hidden');
+      sliceToggle?.classList.add('hidden');
+      doubleToggle?.classList.add('hidden');
+      this.wideActive = false;
+      this.sliceActive = false;
+      this.doubleActive = false;
+      wideToggle?.classList.remove('active');
+      sliceToggle?.classList.remove('active');
+      doubleToggle?.classList.remove('active');
+
+      gridCube?.classList.add('hidden');
+      gridPyra?.classList.remove('hidden');
+
+      if (padHint) {
+        padHint.innerHTML = '💡 Drag faces directly or use keys <strong>U, L, R, B</strong> (Shift for Prime, Alt for tips).';
       }
-    }
-    if (sliceToggle) {
+    } else {
+      doubleToggle?.classList.remove('hidden');
+      gridPyra?.classList.add('hidden');
+      gridCube?.classList.remove('hidden');
+
       if (dim >= 4) {
-        sliceToggle.classList.remove('hidden');
+        wideToggle?.classList.remove('hidden');
+        sliceToggle?.classList.remove('hidden');
       } else {
-        sliceToggle.classList.add('hidden');
+        wideToggle?.classList.add('hidden');
+        sliceToggle?.classList.add('hidden');
+        this.wideActive = false;
         this.sliceActive = false;
-        sliceToggle.classList.remove('active');
+        wideToggle?.classList.remove('active');
+        sliceToggle?.classList.remove('active');
+      }
+
+      if (padHint) {
+        padHint.innerHTML = '💡 Drag faces directly or use keys <strong>U, D, L, R, F, B</strong> (Shift for Prime).';
       }
     }
 
-    // Update active state in cube shape dropdown
+    // Update active state in cube variation dropdown
     const cubeMenu = document.getElementById('cube-variation-menu');
     const cubeLabel = document.getElementById('btn-cube-label');
     const cubeIcon = document.getElementById('btn-cube-icon');
 
-    cubeMenu?.querySelectorAll('.cube-option[data-dim]').forEach(btn => {
-      const match = parseInt(btn.dataset.dim, 10) === dim;
+    cubeMenu?.querySelectorAll('.cube-option').forEach(btn => {
+      let match = false;
+      if (isPyra) {
+        match = btn.dataset.shape === 'pyraminx';
+      } else {
+        match = btn.dataset.shape !== 'pyraminx' && parseInt(btn.dataset.dim, 10) === dim;
+      }
       btn.classList.toggle('active', match);
       if (match) {
-        if (cubeLabel) cubeLabel.textContent = btn.dataset.name || `${dim}×${dim} Cube`;
-        if (cubeIcon) cubeIcon.textContent = btn.dataset.icon || '🧊';
+        if (cubeLabel) cubeLabel.textContent = btn.dataset.name || (isPyra ? 'Pyraminx' : `${dim}×${dim} Cube`);
+        if (cubeIcon) cubeIcon.textContent = btn.dataset.icon || (isPyra ? '🔺' : '🧊');
       }
     });
 
-    this.selectedMethod = dim === 2 ? 'optimal' : (dim === 4 ? 'reduction' : 'kociemba');
+    this.selectedMethod = isPyra ? 'optimal' : (dim === 2 ? 'optimal' : (dim === 4 ? 'reduction' : 'kociemba'));
     this.renderSolveMenu();
-    this.setStatusMessage(`Switched to ${dim}×${dim} Cube.`);
+    this.setStatusMessage(`Switched to ${isPyra ? 'Pyraminx' : `${dim}×${dim} Cube`}.`);
   }
 
   renderSolveMenu() {
@@ -217,9 +267,14 @@ export class ControlsUI {
     const solveLabel = document.getElementById('btn-solve-label');
     if (!solveMenu) return;
 
-    const is4x4 = this.cube.dimension === 4;
-    const is2x2 = this.cube.dimension === 2;
-    const methods = is2x2 ? [
+    const isPyra = this.cube.puzzleType === 'pyraminx';
+    const is4x4 = !isPyra && this.cube.dimension === 4;
+    const is2x2 = !isPyra && this.cube.dimension === 2;
+
+    const methods = isPyra ? [
+      { key: 'optimal', name: "Optimal (God's Algorithm)", hint: "≤ 11 moves • Shortest path solution", icon: "⚡", label: "Solve: Optimal" },
+      { key: 'beginner', name: "Beginner (Layer-by-Layer)", hint: "~12–16 moves • 4 stages (Tips → Centers → Edges)", icon: "🔰", label: "Solve: Beginner" },
+    ] : (is2x2 ? [
       { key: 'optimal', name: "Optimal (God's Algorithm)", hint: "≤ 11 moves • Mathematical shortest path", icon: "⚡", label: "Solve: Optimal" },
       { key: 'beginner', name: "Beginner (Layer-by-Layer)", hint: "~15–20 moves • 3 standard learning stages", icon: "🔰", label: "Solve: Beginner" },
       { key: 'ortega', name: "Ortega Method", hint: "~11–15 moves • Speedcubing (Face → OLL → PBL)", icon: "👑", label: "Solve: Ortega" },
@@ -230,7 +285,7 @@ export class ControlsUI {
       { key: 'beginner', name: "Beginner (Layer-by-Layer)", hint: "~110–120 moves • 7 standard learning stages", icon: "🔰", label: "Solve: Beginner" },
       { key: 'cfop', name: "CFOP / Fridrich", hint: "~70–75 moves • Cross → F2L → OLL → PLL", icon: "👑", label: "Solve: CFOP" },
       { key: 'roux', name: "Roux Method", hint: "~70–75 moves • Left/Right Blocks & M-Slice", icon: "💡", label: "Solve: Roux" },
-    ]);
+    ]));
 
     const validKeys = methods.map(m => m.key);
     if (!validKeys.includes(this.selectedMethod)) {
@@ -242,8 +297,9 @@ export class ControlsUI {
       solveLabel.textContent = currentMethodObj.label;
     }
 
+    const headingText = isPyra ? 'Pyraminx' : `${this.cube.dimension}×${this.cube.dimension}`;
     solveMenu.innerHTML = `
-      <div class="menu-heading">Select Solving Method (${this.cube.dimension}×${this.cube.dimension})</div>
+      <div class="menu-heading">Select Solving Method (${headingText})</div>
       ${methods.map(m => `
         <button class="method-option ${m.key === this.selectedMethod ? 'active' : ''}" data-method="${m.key}">
           <span class="method-icon">${m.icon}</span>
@@ -272,6 +328,34 @@ export class ControlsUI {
   }
 
   generateScramble(length = 20) {
+    if (this.cube.puzzleType === 'pyraminx') {
+      const layerFaces = ['U', 'L', 'R', 'B'];
+      const modifiers = ['', "'"];
+      const moves = [];
+      let lastFace = '';
+      const layerMoveCount = 11;
+
+      for (let i = 0; i < layerMoveCount; i++) {
+        let face = layerFaces[Math.floor(Math.random() * layerFaces.length)];
+        while (face === lastFace) {
+          face = layerFaces[Math.floor(Math.random() * layerFaces.length)];
+        }
+        lastFace = face;
+        const mod = modifiers[Math.floor(Math.random() * modifiers.length)];
+        moves.push(face + mod);
+      }
+
+      // Random tip moves
+      const tipFaces = ['u', 'l', 'r', 'b'];
+      tipFaces.forEach(tip => {
+        if (Math.random() > 0.35) {
+          const mod = modifiers[Math.floor(Math.random() * modifiers.length)];
+          moves.push(tip + mod);
+        }
+      });
+
+      return moves.join(' ');
+    }
     if (this.cube.dimension === 2) {
       const faces = ['U', 'R', 'F'];
       const modifiers = ['', "'", '2'];
@@ -354,9 +438,15 @@ export class ControlsUI {
   }
 
   resetCamera() {
-    this.camera.position.set(4.8, 3.8, 5.2);
-    this.camera.lookAt(0, 0, 0);
-    this.controls.target.set(0, 0, 0);
+    if (this.cube.puzzleType === 'pyraminx') {
+      this.camera.position.set(4.4, 3.2, 3.2);
+      this.camera.lookAt(0, 0.35, 0);
+      this.controls.target.set(0, 0.35, 0);
+    } else {
+      this.camera.position.set(4.8, 3.8, 5.2);
+      this.camera.lookAt(0, 0, 0);
+      this.controls.target.set(0, 0, 0);
+    }
     this.controls.update();
   }
 

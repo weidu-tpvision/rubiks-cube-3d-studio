@@ -4,6 +4,7 @@ import { CFOPSolver } from './CFOPSolver.js';
 import { RouxSolver } from './RouxSolver.js';
 import { solver2x2 } from './Solver2x2.js';
 import { solver4x4, MOVE_DESCRIPTIONS_4X4 } from './Solver4x4.js';
+import { solverPyraminx, MOVE_DESCRIPTIONS_PYRAMINX } from './SolverPyraminx.js';
 
 const Cube = CubeModule.default || CubeModule;
 
@@ -76,6 +77,7 @@ export class SolverService {
   }
 
   describeMove(move) {
+    if (MOVE_DESCRIPTIONS_PYRAMINX[move]) return MOVE_DESCRIPTIONS_PYRAMINX[move];
     if (MOVE_DESCRIPTIONS_4X4[move]) return MOVE_DESCRIPTIONS_4X4[move];
     return MOVE_DESCRIPTIONS[move] || `Rotate ${move}`;
   }
@@ -324,6 +326,9 @@ export class SolverService {
   }
 
   solve(rubiksCube, method = 'kociemba', options = {}) {
+    if (rubiksCube.puzzleType === 'pyraminx') {
+      return solverPyraminx.solve(rubiksCube, method);
+    }
     const faceletStr = rubiksCube.getFaceletString();
     const moveHistory = rubiksCube.moveHistory || options.moveHistory || [];
     return this.solveFromFaceletString(faceletStr, method, { ...options, moveHistory });

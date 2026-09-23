@@ -517,6 +517,15 @@ body.has-player-dock .status-badge {
   gap: 8px;
 }
 
+.move-grid.hidden {
+  display: none !important;
+}
+
+.pyra-move-grid {
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
 .move-btn {
   display: flex;
   flex-direction: column;
@@ -534,6 +543,12 @@ body.has-player-dock .status-badge {
   position: relative;
 }
 
+.move-btn.move-btn-tip {
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 0.95rem;
+  border-style: dashed;
+}
+
 .move-btn .sub {
   font-size: 0.62rem;
   font-weight: 400;
@@ -547,6 +562,11 @@ body.has-player-dock .status-badge {
 .move-btn[data-move="B"] { border-bottom: 3px solid #0046ad; }
 .move-btn[data-move="L"] { border-bottom: 3px solid #ff5800; }
 .move-btn[data-move="R"] { border-bottom: 3px solid #b71234; }
+
+.move-btn[data-move="u"] { border-bottom: 2px dashed #ffffff; }
+.move-btn[data-move="l"] { border-bottom: 2px dashed #ff5800; }
+.move-btn[data-move="r"] { border-bottom: 2px dashed #b71234; }
+.move-btn[data-move="b"] { border-bottom: 2px dashed #0046ad; }
 
 .move-btn:hover {
   background: rgba(255, 255, 255, 0.14);

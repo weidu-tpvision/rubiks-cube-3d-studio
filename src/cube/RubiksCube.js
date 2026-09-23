@@ -5,10 +5,17 @@ import {
   createStickerMaterial,
   createCenterStickerMaterial,
 } from './CubeColors.js';
+import {
+  buildPyraminxPieces,
+  getPyraminxMoveParams,
+  getPyraminxPiecesForMove,
+  snapPyraminxPiece,
+} from './PyraminxGeometry.js';
 
 export class RubiksCube {
   constructor(scene, dimension = 3) {
     this.scene = scene;
+    this.puzzleType = 'cube'; // 'cube' | 'pyraminx'
     this.dimension = dimension;
     this.cubeGroup = new THREE.Group();
     this.cubeGroup.name = 'RubiksCube';
@@ -18,6 +25,7 @@ export class RubiksCube {
     this.allStickers = [];
     this.orientationAnchors = null;
     this.anchorMap = {};
+    this.initialPyraminxPositions = { tip: [], center: [], edge: [] };
 
     this.isAnimating = false;
     this.moveQueue = [];
@@ -33,8 +41,16 @@ export class RubiksCube {
     this.buildCube();
   }
 
+  setPuzzleType(type = 'cube', dimension = 3) {
+    if (this.puzzleType === type && this.dimension === dimension) return;
+    this.puzzleType = type;
+    this.dimension = dimension;
+    this.reset();
+  }
+
   setDimension(dimension) {
-    if (this.dimension === dimension) return;
+    if (this.puzzleType === 'cube' && this.dimension === dimension) return;
+    this.puzzleType = 'cube';
     this.dimension = dimension;
     this.reset();
   }
@@ -62,6 +78,23 @@ export class RubiksCube {
     }
     this.cubies = [];
     this.allStickers = [];
+
+    if (this.puzzleType === 'pyraminx') {
+      this.orientationAnchors = null;
+      this.anchorMap = {};
+      const { pieces, allStickers } = buildPyraminxPieces();
+      this.initialPyraminxPositions = { tip: [], center: [], edge: [] };
+      pieces.forEach(p => {
+        this.cubeGroup.add(p);
+        this.cubies.push(p);
+        const pType = p.userData.pieceType;
+        if (this.initialPyraminxPositions[pType]) {
+          this.initialPyraminxPositions[pType].push(p.position.clone());
+        }
+      });
+      this.allStickers = allStickers;
+      return;
+    }
 
     // Orientation reference frame to track 6 face directions across whole-cube rotations
     this.orientationAnchors = new THREE.Group();
@@ -332,6 +365,14 @@ export class RubiksCube {
 
   // Find cubies matching a slice
   getCubiesForMove(moveTypeOrParams) {
+    if (this.puzzleType === 'pyraminx') {
+      if (typeof moveTypeOrParams === 'object' && moveTypeOrParams !== null) {
+        return getPyraminxPiecesForMove(this.cubies, moveTypeOrParams);
+      }
+      const params = this.getMoveParams(moveTypeOrParams);
+      return params ? getPyraminxPiecesForMove(this.cubies, params) : [];
+    }
+
     if (typeof moveTypeOrParams === 'object' && moveTypeOrParams !== null) {
       if (moveTypeOrParams.isWholeCube) return this.cubies;
       const normal = moveTypeOrParams.normal;
@@ -383,6 +424,11 @@ export class RubiksCube {
   // Get rotation parameters: axis vector and angle
   getMoveParams(moveStr) {
     if (!moveStr) return null;
+
+    if (this.puzzleType === 'pyraminx') {
+      return getPyraminxMoveParams(moveStr);
+    }
+
     const isPrime = moveStr.includes("'");
     const isDouble = moveStr.endsWith('2');
 
@@ -609,8 +655,13 @@ export class RubiksCube {
     requestAnimationFrame(animateStep);
   }
 
-  // Snap cubie to exact integer positions and 90-degree rotations
+  // Snap cubie to exact integer positions and 90-degree rotations (or Pyraminx slots)
   snapCubie(cubie) {
+    if (this.puzzleType === 'pyraminx') {
+      snapPyraminxPiece(cubie, this.initialPyraminxPositions);
+      return;
+    }
+
     if (this.dimension === 2) {
       cubie.position.x = Math.round(cubie.position.x * 2) / 2;
       cubie.position.y = Math.round(cubie.position.y * 2) / 2;
@@ -638,6 +689,10 @@ export class RubiksCube {
 
   // Extract the facelet state in standard URFDLB order for solver (24 facelets for 2x2, 54 for 3x3)
   getFaceletString() {
+    if (this.puzzleType === 'pyraminx') {
+      return 'PYRAMINX';
+    }
+
     this.cubeGroup.updateMatrixWorld(true);
 
     const U = this.getCenterNormal('U');

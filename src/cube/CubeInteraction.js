@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { AXIS_VECTORS } from './PyraminxGeometry.js';
 
 export class CubeInteraction {
   constructor(rubiksCube, camera, canvas, orbitControls, options = {}) {
@@ -19,6 +20,7 @@ export class CubeInteraction {
     this.hitSticker = null;
     this.hitNormal = new THREE.Vector3();
     this.hitCubiePos = new THREE.Vector3();
+    this.hitPoint = new THREE.Vector3();
 
     this.enabled = true;
 
@@ -96,7 +98,9 @@ export class CubeInteraction {
       const hit = intersects[0];
       const cubiePos = new THREE.Vector3();
       hit.object.parent.getWorldPosition(cubiePos);
-      if (this.cube.dimension === 2) {
+      if (this.cube.puzzleType === 'pyraminx') {
+        hit.object.parent.getWorldPosition(cubiePos);
+      } else if (this.cube.dimension === 2) {
         cubiePos.x = Math.round(cubiePos.x * 2) / 2;
         cubiePos.y = Math.round(cubiePos.y * 2) / 2;
         cubiePos.z = Math.round(cubiePos.z * 2) / 2;
@@ -111,8 +115,8 @@ export class CubeInteraction {
         cubiePos.z = Math.round(cubiePos.z);
       }
 
-      // In 2x2 and 4x4 all outer pieces are turnable. In 3x3, edges and corners (sum of abs >= 2).
-      const isTurnableLayer = this.cube.dimension === 2 || this.cube.dimension === 4 || (Math.abs(cubiePos.x) + Math.abs(cubiePos.y) + Math.abs(cubiePos.z)) >= 2;
+      // In 2x2 and 4x4 all outer pieces are turnable. In 3x3, edges and corners (sum of abs >= 2). In Pyraminx, all stickers are turnable.
+      const isTurnableLayer = this.cube.puzzleType === 'pyraminx' || this.cube.dimension === 2 || this.cube.dimension === 4 || (Math.abs(cubiePos.x) + Math.abs(cubiePos.y) + Math.abs(cubiePos.z)) >= 2;
 
       if (isTurnableLayer) {
         this.hitSticker = hit.object;
@@ -120,6 +124,7 @@ export class CubeInteraction {
           .applyQuaternion(this.hitSticker.parent.quaternion)
           .normalize();
         this.hitCubiePos.copy(cubiePos);
+        this.hitPoint.copy(hit.point);
 
         this.isPointerDown = true;
         this.isDraggingFace = true;
@@ -148,7 +153,7 @@ export class CubeInteraction {
       if (intersects.length > 0) {
         const cubiePos = new THREE.Vector3();
         intersects[0].object.parent.getWorldPosition(cubiePos);
-        const isTurnable = this.cube.dimension === 2 || this.cube.dimension === 4 || (Math.abs(Math.round(cubiePos.x)) + Math.abs(Math.round(cubiePos.y)) + Math.abs(Math.round(cubiePos.z))) >= 2;
+        const isTurnable = this.cube.puzzleType === 'pyraminx' || this.cube.dimension === 2 || this.cube.dimension === 4 || (Math.abs(Math.round(cubiePos.x)) + Math.abs(Math.round(cubiePos.y)) + Math.abs(Math.round(cubiePos.z))) >= 2;
         this.updateCursor(isTurnable);
       } else {
         this.updateCursor(false);
@@ -178,8 +183,8 @@ export class CubeInteraction {
     }
   }
 
-  projectVectorToScreen(vec3) {
-    const origin = this.hitCubiePos.clone();
+  projectVectorToScreen(vec3, originPos = null) {
+    const origin = (originPos || this.hitCubiePos).clone();
     const target = origin.clone().add(vec3);
 
     origin.project(this.camera);
@@ -199,6 +204,74 @@ export class CubeInteraction {
   }
 
   resolveFaceDrag(screenDx, screenDy) {
+    if (this.cube.puzzleType === 'pyraminx') {
+      const dragDir = new THREE.Vector2(screenDx, screenDy).normalize();
+      const cubie = this.hitSticker?.parent;
+      const pieceType = cubie?.userData?.pieceType;
+
+      // Use the actual clicked surface point so rotation tangent is never zero (collinear)
+      const hitPt = this.hitPoint.lengthSq() > 0 ? this.hitPoint : this.hitCubiePos;
+
+      // 1. Determine candidate rotation axes dynamically by 3D physical position
+      // (Never rely on static pieceId, which becomes outdated when edges cycle after moves)
+      const sortedAxes = Object.keys(AXIS_VECTORS).map(k => ({
+        key: k,
+        dot: hitPt.dot(AXIS_VECTORS[k])
+      })).sort((a, b) => b.dot - a.dot);
+
+      let candidateVertices = [];
+      if (pieceType === 'tip' || pieceType === 'center') {
+        // Tips and Centers unambiguously belong to their single closest vertex
+        candidateVertices = [sortedAxes[0].key];
+      } else {
+        // Edges physically connect the two nearest vertices
+        candidateVertices = [sortedAxes[0].key, sortedAxes[1].key];
+      }
+
+      let bestVertex = null;
+      let bestScore = -Infinity;
+      let bestDot = 0;
+
+      for (const vKey of candidateVertices) {
+        const axisVec = AXIS_VECTORS[vKey];
+        if (!axisVec) continue;
+
+        // Clockwise rotational velocity tangent = (-axis) x (hitPoint)
+        const vCW = new THREE.Vector3().crossVectors(axisVec.clone().negate(), hitPt).normalize();
+        if (vCW.lengthSq() < 1e-4) continue;
+
+        const screenVec = this.projectVectorToScreen(vCW, hitPt);
+        const dirDot = dragDir.dot(screenVec);
+        const absDot = Math.abs(dirDot);
+
+        // Score combines directional alignment with proximity along this axis
+        // This ensures clicking on the right side of an edge turns R, and the left side turns L
+        const prox = Math.max(0.1, hitPt.dot(axisVec));
+        const score = absDot * (1.0 + 2.0 * prox);
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestDot = dirDot;
+          bestVertex = vKey;
+        }
+      }
+
+      if (bestVertex && Math.abs(bestDot) > 0.25) {
+        const isCW = bestDot > 0;
+        let moveNotation = pieceType === 'tip' ? bestVertex.toLowerCase() : bestVertex;
+        if (!isCW) moveNotation += "'";
+
+        this.cube.twist(moveNotation);
+        this.triggerHaptic(25);
+        if (this.onUserMove) this.onUserMove(moveNotation);
+        if (this.orbitControls) this.orbitControls.enabled = true;
+        return true;
+      }
+
+      if (this.orbitControls) this.orbitControls.enabled = true;
+      return false;
+    }
+
     const dragDir = new THREE.Vector2(screenDx, screenDy).normalize();
     const normal = this.hitNormal;
     const pos = this.hitCubiePos;
@@ -342,6 +415,19 @@ export class CubeInteraction {
         sliceBtn?.click();
         e.preventDefault();
         return;
+      }
+
+      if (this.cube.puzzleType === 'pyraminx') {
+        const pyraMoves = ['U', 'L', 'R', 'B'];
+        if (pyraMoves.includes(upper)) {
+          const isTip = e.altKey || (!isShift && key === key.toLowerCase());
+          let move = isTip ? key.toLowerCase() : upper;
+          if (isShift) move += "'";
+          this.cube.twist(move);
+          if (this.onUserMove) this.onUserMove(move);
+          e.preventDefault();
+          return;
+        }
       }
 
       const validMoves = ['U', 'D', 'L', 'R', 'F', 'B'];
