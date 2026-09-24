@@ -1,4 +1,7 @@
+import * as THREE from 'three';
 import { solverService } from '../solver/SolverService.js';
+import { SpeedTimer } from './SpeedTimer.js';
+import { cubeAudio } from '../cube/CubeAudio.js';
 
 export class ControlsUI {
   constructor(rubiksCube, camera, orbitControls, stepPlayer, options = {}) {
@@ -15,13 +18,12 @@ export class ControlsUI {
     this.sliceActive = false;
     this.selectedMethod = 'kociemba';
 
-    this.timerInterval = null;
-    this.timerStartTime = null;
-    this.isTimerRunning = false;
-
     this.initControls();
     this.renderSolveMenu();
-    this.initTimer();
+    this.speedTimer = new SpeedTimer();
+    this.initAudioToggle();
+    this.initThemeMenu();
+    this.initCameraQuickSnap();
 
     // Initialize wide & slice button visibility
     const wideToggle = document.getElementById('mod-wide');
@@ -421,6 +423,10 @@ export class ControlsUI {
     const scrambleSequence = this.generateScramble(20);
     this.setStatusMessage('Scrambling cube...');
 
+    if (this.speedTimer) {
+      this.speedTimer.setScramble(scrambleSequence);
+    }
+
     // Execute with fast animation
     this.cube.twist(scrambleSequence, { duration: 120 });
     this.cube.onQueueEmpty = () => {
@@ -433,21 +439,20 @@ export class ControlsUI {
     this.player.stopAndClose();
     this.cube.resetHighlights();
     this.cube.reset();
-    this.resetTimer();
+    if (this.speedTimer) {
+      this.speedTimer.cancelHold();
+    }
+    const scrambleEl = document.getElementById('scramble-banner');
+    if (scrambleEl) scrambleEl.classList.add('hidden');
     this.setStatusMessage('Cube reset to solved state.');
   }
 
   resetCamera() {
     if (this.cube.puzzleType === 'pyraminx') {
-      this.camera.position.set(4.4, 3.2, 3.2);
-      this.camera.lookAt(0, 0.35, 0);
-      this.controls.target.set(0, 0.35, 0);
+      this.animateCameraTo(new THREE.Vector3(4.4, 3.2, 3.2), new THREE.Vector3(0, 0.35, 0));
     } else {
-      this.camera.position.set(4.8, 3.8, 5.2);
-      this.camera.lookAt(0, 0, 0);
-      this.controls.target.set(0, 0, 0);
+      this.animateCameraTo(new THREE.Vector3(4.8, 3.8, 5.2), new THREE.Vector3(0, 0, 0));
     }
-    this.controls.update();
   }
 
   startStepByStepSolve() {
@@ -497,42 +502,122 @@ export class ControlsUI {
     }, 4000);
   }
 
-  initTimer() {
-    const timerEl = document.getElementById('cube-timer');
-    if (!timerEl) return;
+  animateCameraTo(targetPos, targetLookAt = new THREE.Vector3(0, 0, 0), duration = 280) {
+    const startPos = this.camera.position.clone();
+    const startTarget = this.controls.target.clone();
+    const startTime = performance.now();
 
-    timerEl.addEventListener('click', () => {
-      if (this.isTimerRunning) {
-        this.stopTimer();
-      } else {
-        this.startTimer();
+    const step = (now) => {
+      const elapsed = now - startTime;
+      const t = Math.min(elapsed / duration, 1.0);
+      const ease = 1 - Math.pow(1 - t, 3); // smooth cubic ease out
+
+      this.camera.position.lerpVectors(startPos, targetPos, ease);
+      this.controls.target.lerpVectors(startTarget, targetLookAt, ease);
+      this.controls.update();
+
+      if (t < 1.0) {
+        requestAnimationFrame(step);
       }
+    };
+    requestAnimationFrame(step);
+  }
+
+  snapCamera(view) {
+    const dist = this.cube.puzzleType === 'pyraminx' ? 6.8 : 7.2;
+    const views = {
+      front: new THREE.Vector3(0, 0, dist),
+      back: new THREE.Vector3(0, 0, -dist),
+      top: new THREE.Vector3(0, dist, 0.001),
+      bottom: new THREE.Vector3(0, -dist, 0.001),
+      right: new THREE.Vector3(dist, 0, 0),
+      left: new THREE.Vector3(-dist, 0, 0),
+      isometric: this.cube.puzzleType === 'pyraminx' ? new THREE.Vector3(4.4, 3.2, 3.2) : new THREE.Vector3(4.8, 3.8, 5.2),
+    };
+
+    if (views[view]) {
+      const lookTarget = this.cube.puzzleType === 'pyraminx' ? new THREE.Vector3(0, 0.35, 0) : new THREE.Vector3(0, 0, 0);
+      this.animateCameraTo(views[view], lookTarget);
+    }
+  }
+
+  initAudioToggle() {
+    const btn = document.getElementById('btn-audio-toggle');
+    const icon = document.getElementById('btn-audio-icon');
+    if (!btn || !icon) return;
+
+    const updateIcon = () => {
+      icon.textContent = cubeAudio.isEnabled ? '🔊' : '🔇';
+      btn.title = cubeAudio.isEnabled ? 'Audio feedback: ON (Click to mute)' : 'Audio feedback: MUTED (Click to unmute)';
+    };
+    updateIcon();
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      cubeAudio.toggleSound();
+      updateIcon();
     });
   }
 
-  startTimer() {
-    this.isTimerRunning = true;
-    this.timerStartTime = performance.now();
-    const timerEl = document.getElementById('cube-timer');
-    if (timerEl) timerEl.classList.add('running');
+  initThemeMenu() {
+    const btn = document.getElementById('btn-theme-dropdown');
+    const menu = document.getElementById('theme-menu');
+    if (!btn || !menu) return;
 
-    this.timerInterval = setInterval(() => {
-      const elapsed = performance.now() - this.timerStartTime;
-      const seconds = (elapsed / 1000).toFixed(2);
-      if (timerEl) timerEl.textContent = `${seconds}s`;
-    }, 30);
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      menu.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.theme-dropdown-container')) {
+        menu.classList.add('hidden');
+      }
+    });
+
+    menu.querySelectorAll('.theme-option').forEach(opt => {
+      opt.addEventListener('click', () => {
+        const themeKey = opt.dataset.theme;
+        menu.querySelectorAll('.theme-option').forEach(o => o.classList.remove('active'));
+        opt.classList.add('active');
+        this.cube.setTheme(themeKey);
+        menu.classList.add('hidden');
+      });
+    });
+
+    menu.querySelectorAll('.plastic-option').forEach(opt => {
+      opt.addEventListener('click', () => {
+        const plasticKey = opt.dataset.plastic;
+        menu.querySelectorAll('.plastic-option').forEach(o => o.classList.remove('active'));
+        opt.classList.add('active');
+        this.cube.setPlastic(plasticKey);
+        menu.classList.add('hidden');
+      });
+    });
   }
 
-  stopTimer() {
-    this.isTimerRunning = false;
-    if (this.timerInterval) clearInterval(this.timerInterval);
-    const timerEl = document.getElementById('cube-timer');
-    if (timerEl) timerEl.classList.remove('running');
-  }
+  initCameraQuickSnap() {
+    const btn = document.getElementById('btn-cam-dropdown');
+    const menu = document.getElementById('cam-view-menu');
+    if (!btn || !menu) return;
 
-  resetTimer() {
-    this.stopTimer();
-    const timerEl = document.getElementById('cube-timer');
-    if (timerEl) timerEl.textContent = '0.00s';
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      menu.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.cam-dropdown-container')) {
+        menu.classList.add('hidden');
+      }
+    });
+
+    menu.querySelectorAll('.cam-view-btn').forEach(b => {
+      b.addEventListener('click', () => {
+        const view = b.dataset.view;
+        this.snapCamera(view);
+        menu.classList.add('hidden');
+      });
+    });
   }
 }

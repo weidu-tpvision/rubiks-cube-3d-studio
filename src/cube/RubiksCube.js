@@ -1,6 +1,11 @@
 import * as THREE from 'three';
 import {
   FACE_COLORS,
+  getActiveFaceColors,
+  setActiveTheme,
+  setActivePlastic,
+  THEMES,
+  PLASTICS,
   createBodyMaterial,
   createStickerMaterial,
   createCenterStickerMaterial,
@@ -11,6 +16,7 @@ import {
   getPyraminxPiecesForMove,
   snapPyraminxPiece,
 } from './PyraminxGeometry.js';
+import { cubeAudio } from './CubeAudio.js';
 
 export class RubiksCube {
   constructor(scene, dimension = 3) {
@@ -71,10 +77,32 @@ export class RubiksCube {
     this.queueEmptyListeners.delete(fn);
   }
 
+  disposeHierarchy(obj) {
+    if (!obj) return;
+    obj.traverse((child) => {
+      if (child.geometry) {
+        child.geometry.dispose();
+      }
+      if (child.material) {
+        if (Array.isArray(child.material)) {
+          child.material.forEach((mat) => {
+            if (mat.map) mat.map.dispose();
+            mat.dispose();
+          });
+        } else {
+          if (child.material.map) child.material.map.dispose();
+          child.material.dispose();
+        }
+      }
+    });
+  }
+
   buildCube() {
-    // Clear existing
+    // Clear and dispose existing geometries, materials, and textures
     while (this.cubeGroup.children.length > 0) {
-      this.cubeGroup.remove(this.cubeGroup.children[0]);
+      const child = this.cubeGroup.children[0];
+      this.disposeHierarchy(child);
+      this.cubeGroup.remove(child);
     }
     this.cubies = [];
     this.allStickers = [];
@@ -134,6 +162,7 @@ export class RubiksCube {
       { face: 'F', pos: [0, 0, 0.472], rot: [0, 0, 0], normal: new THREE.Vector3(0, 0, 1) },
       { face: 'B', pos: [0, 0, -0.472], rot: [0, Math.PI, 0], normal: new THREE.Vector3(0, 0, -1) },
     ];
+    const activeFaces = getActiveFaceColors();
 
     if (this.dimension === 2) {
       // 2x2 Pocket Cube: 8 corner pieces
@@ -160,7 +189,7 @@ export class RubiksCube {
               if (def.face === 'B' && z < 0) isOuter = true;
 
               if (isOuter) {
-                const colorInfo = FACE_COLORS[def.face];
+                const colorInfo = activeFaces[def.face];
                 const stickerMat = createStickerMaterial(colorInfo.hex);
 
                 const sticker = new THREE.Mesh(stickerGeometry, stickerMat);
@@ -215,7 +244,7 @@ export class RubiksCube {
               if (def.face === 'B' && z === -1.5) isOuter = true;
 
               if (isOuter) {
-                const colorInfo = FACE_COLORS[def.face];
+                const colorInfo = activeFaces[def.face];
                 const stickerMat = createStickerMaterial(colorInfo.hex);
 
                 const sticker = new THREE.Mesh(stickerGeometry, stickerMat);
@@ -269,7 +298,7 @@ export class RubiksCube {
               if (def.face === 'B' && z === -1) isOuter = true;
 
               if (isOuter) {
-                const colorInfo = FACE_COLORS[def.face];
+                const colorInfo = activeFaces[def.face];
                 const isCenter =
                   (def.face === 'R' && x === 1 && y === 0 && z === 0) ||
                   (def.face === 'L' && x === -1 && y === 0 && z === 0) ||
@@ -561,7 +590,27 @@ export class RubiksCube {
       }
 
       this.cubeGroup.remove(pivot);
+      cubeAudio.playTurnSound(0.5);
     });
+  }
+
+  setTheme(themeKey) {
+    setActiveTheme(themeKey);
+    this.rebuild();
+  }
+
+  setPlastic(plasticKey) {
+    setActivePlastic(plasticKey);
+    this.rebuild();
+  }
+
+  rebuild() {
+    const curMoveHistory = [...this.moveHistory];
+    this.buildCube();
+    if (curMoveHistory.length > 0) {
+      this.twistInstant(curMoveHistory.join(' '), { record: false });
+      this.moveHistory = curMoveHistory;
+    }
   }
 
   processNextMove() {
@@ -643,6 +692,8 @@ export class RubiksCube {
 
         this.cubeGroup.remove(pivot);
         this.activePivot = null;
+
+        cubeAudio.playTurnSound(1.0);
 
         if (this.onMoveComplete) this.onMoveComplete(move);
         this.moveCompleteListeners.forEach(fn => {
@@ -979,7 +1030,11 @@ export class RubiksCube {
   }
 
   reset() {
-    this.activePivot = null;
+    if (this.activePivot) {
+      this.disposeHierarchy(this.activePivot);
+      this.cubeGroup.remove(this.activePivot);
+      this.activePivot = null;
+    }
     this.moveQueue = [];
     this.moveHistory = [];
     this.isAnimating = false;

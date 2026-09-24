@@ -77,12 +77,17 @@ function hashFront(c) {
   return `${cPos},${cOri},${dlPos},${dlOri},${flPos},${flOri}`;
 }
 
-const frontTable = new Map();
-frontTable.set('5,0,6,0,9,0', 0);
-{
+let frontTable = null;
+
+function getFrontTable() {
+  if (frontTable) return frontTable;
+  frontTable = new Map();
+  frontTable.set('5,0,6,0,9,0', 0);
+
   const q = [new Cube()];
-  while (q.length > 0) {
-    const curr = q.shift();
+  let head = 0;
+  while (head < q.length) {
+    const curr = q[head++];
     const d = frontTable.get(hashFront(curr));
     if (d >= 5) continue;
     for (const m of MOVES_18) {
@@ -95,6 +100,7 @@ frontTable.set('5,0,6,0,9,0', 0);
       }
     }
   }
+  return frontTable;
 }
 
 // Precomputed BL table for FB (preserving Front 1x2x2)
@@ -106,13 +112,18 @@ function hashBL(c) {
   return `${cPos}_${cOri}_${ePos}_${eOri}`;
 }
 
-const blTable = new Map();
-blTable.set('6_0_10_0', []);
-{
+let blTable = null;
+
+function getBlTable() {
+  if (blTable) return blTable;
+  blTable = new Map();
+  blTable.set('6_0_10_0', []);
+
   const BL_MOVES = ['U', "U'", 'U2', 'B', "B'", 'B2', 'R', "R'", 'R2', 'M', "M'", 'M2'];
   const q = [{ cube: new Cube(), path: [] }];
-  while (q.length > 0) {
-    const curr = q.shift();
+  let head = 0;
+  while (head < q.length) {
+    const curr = q[head++];
     if (curr.path.length >= 6) continue;
     for (const m of BL_MOVES) {
       if (curr.path.length > 0 && curr.path[curr.path.length - 1][0] === m[0]) continue;
@@ -133,6 +144,7 @@ blTable.set('6_0_10_0', []);
       }
     }
   }
+  return blTable;
 }
 
 export function solveFirstBlock(cube) {
@@ -149,7 +161,8 @@ export function solveFirstBlock(cube) {
                            c.ep[6] === 6 && c.eo[6] === 0 &&
                            c.ep[9] === 9 && c.eo[9] === 0;
   if (!isFrontOk(cube)) {
-    const getH = (c) => frontTable.has(hashFront(c)) ? frontTable.get(hashFront(c)) : 5;
+    const fTable = getFrontTable();
+    const getH = (c) => fTable.has(hashFront(c)) ? fTable.get(hashFront(c)) : 5;
     const search = (c, g, bound, path, lastFace) => {
       const hVal = getH(c);
       const f = g + hVal;
@@ -182,9 +195,10 @@ export function solveFirstBlock(cube) {
   const isFBOk = (c) => isFrontOk(c) && c.cp[6] === 6 && c.co[6] === 0 &&
                         c.ep[10] === 10 && c.eo[10] === 0;
   if (!isFBOk(cube)) {
+    const bTable = getBlTable();
     const h = hashBL(cube);
-    if (blTable.has(h)) {
-      blTable.get(h).forEach(m => apply(m));
+    if (bTable.has(h)) {
+      bTable.get(h).forEach(m => apply(m));
     } else {
       // 1-2 step forward fallback
       const BL_MOVES = ['U', "U'", 'U2', 'B', "B'", 'B2', 'R', "R'", 'R2', 'M', "M'", 'M2'];
@@ -192,9 +206,9 @@ export function solveFirstBlock(cube) {
         const test = new Cube(cube);
         test.move(m);
         const h2 = hashBL(test);
-        if (blTable.has(h2)) {
+        if (bTable.has(h2)) {
           apply(m);
-          blTable.get(h2).forEach(move => apply(move));
+          bTable.get(h2).forEach(move => apply(move));
           break;
         }
       }
@@ -493,14 +507,17 @@ function hashLSE(c) {
   return `${c.center[0]}_${c.cp[0]}_${c.ep[0]}_${c.eo[0]}_${c.ep[1]}_${c.eo[1]}_${c.ep[2]}_${c.eo[2]}_${c.ep[3]}_${c.eo[3]}_${c.ep[5]}_${c.eo[5]}_${c.ep[7]}_${c.eo[7]}`;
 }
 
-console.log('Building LSE backward table (depth 8)...');
-const lseBwdTable = new Map();
-lseBwdTable.set(hashLSE(new Cube()), []);
+let lseBwdTable = null;
 
-{
+function getLseBwdTable() {
+  if (lseBwdTable) return lseBwdTable;
+  lseBwdTable = new Map();
+  lseBwdTable.set(hashLSE(new Cube()), []);
+
   const q = [{ cube: new Cube(), path: [], lastType: null }];
-  while (q.length > 0) {
-    const curr = q.shift();
+  let head = 0;
+  while (head < q.length) {
+    const curr = q[head++];
     if (curr.path.length >= 8) continue;
     const candidates = curr.lastType === 'M' ? U_MOVES : (curr.lastType === 'U' ? M_MOVES : ALL_MU);
     for (const m of candidates) {
@@ -518,21 +535,23 @@ lseBwdTable.set(hashLSE(new Cube()), []);
       }
     }
   }
+  return lseBwdTable;
 }
-console.log(`LSE backward table size: ${lseBwdTable.size}`);
 
 export function solveLSE(cube) {
   if (cube.isSolved()) return [];
+  const bwdTable = getLseBwdTable();
   const startH = hashLSE(cube);
-  if (lseBwdTable.has(startH)) {
-    const sol = lseBwdTable.get(startH);
+  if (bwdTable.has(startH)) {
+    const sol = bwdTable.get(startH);
     sol.forEach(m => cube.move(m));
     return cancelMoves(sol);
   }
 
   const q = [{ cube: new Cube(cube), path: [], lastType: null }];
-  while (q.length > 0) {
-    const curr = q.shift();
+  let head = 0;
+  while (head < q.length) {
+    const curr = q[head++];
     if (curr.path.length >= 8) continue;
     const candidates = curr.lastType === 'M' ? U_MOVES : (curr.lastType === 'U' ? M_MOVES : ALL_MU);
     for (const m of candidates) {
@@ -542,8 +561,8 @@ export function solveLSE(cube) {
       const newPath = [...curr.path, m];
       const nextType = m[0] === 'M' ? 'M' : 'U';
 
-      if (lseBwdTable.has(h)) {
-        const full = [...newPath, ...lseBwdTable.get(h)];
+      if (bwdTable.has(h)) {
+        const full = [...newPath, ...bwdTable.get(h)];
         full.forEach(move => cube.move(move));
         return cancelMoves(full);
       }
@@ -559,8 +578,8 @@ export function solveLSE(cube) {
     const next = new Cube(cube);
     next.move(m);
     const h = hashLSE(next);
-    if (lseBwdTable.has(h)) {
-      const full = [m, ...lseBwdTable.get(h)];
+    if (bwdTable.has(h)) {
+      const full = [m, ...bwdTable.get(h)];
       full.forEach(move => cube.move(move));
       return cancelMoves(full);
     }
@@ -574,8 +593,8 @@ export function solveLSE(cube) {
       const next2 = new Cube(next1);
       next2.move(m2);
       const h = hashLSE(next2);
-      if (lseBwdTable.has(h)) {
-        const full = [m1, m2, ...lseBwdTable.get(h)];
+      if (bwdTable.has(h)) {
+        const full = [m1, m2, ...bwdTable.get(h)];
         full.forEach(move => cube.move(move));
         return cancelMoves(full);
       }

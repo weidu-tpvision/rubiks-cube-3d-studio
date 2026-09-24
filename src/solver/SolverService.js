@@ -41,6 +41,114 @@ const MOVE_DESCRIPTIONS = {
   z2:  'Rotate whole cube 180° (Z axis)',
 };
 
+export function countInversions(arr) {
+  let inv = 0;
+  for (let i = 0; i < arr.length; i++) {
+    for (let j = i + 1; j < arr.length; j++) {
+      if (arr[i] > arr[j]) inv++;
+    }
+  }
+  return inv % 2;
+}
+
+export function validateFaceletString(faceletStr) {
+  if (!faceletStr || typeof faceletStr !== 'string') {
+    return { valid: false, reason: 'Facelet string is missing or not a string' };
+  }
+
+  // 2x2 Pocket Cube (24 stickers)
+  if (faceletStr.length === 24) {
+    const counts = {};
+    for (const ch of faceletStr) {
+      counts[ch] = (counts[ch] || 0) + 1;
+    }
+    for (const face of ['U', 'R', 'F', 'D', 'L', 'B']) {
+      if (counts[face] !== 4) {
+        return { valid: false, reason: `Invalid 2x2 facelet counts: color '${face}' appears ${counts[face] || 0} times (expected 4)` };
+      }
+    }
+    return { valid: true };
+  }
+
+  // 4x4 Rubik's Revenge (96 stickers)
+  if (faceletStr.length === 96) {
+    const counts = {};
+    for (const ch of faceletStr) {
+      counts[ch] = (counts[ch] || 0) + 1;
+    }
+    for (const face of ['U', 'R', 'F', 'D', 'L', 'B']) {
+      if (counts[face] !== 16) {
+        return { valid: false, reason: `Invalid 4x4 facelet counts: color '${face}' appears ${counts[face] || 0} times (expected 16)` };
+      }
+    }
+    return { valid: true };
+  }
+
+  // 3x3 Standard Cube (54 stickers)
+  if (faceletStr.length === 54) {
+    const counts = {};
+    for (const ch of faceletStr) {
+      counts[ch] = (counts[ch] || 0) + 1;
+    }
+    for (const face of ['U', 'R', 'F', 'D', 'L', 'B']) {
+      if (counts[face] !== 9) {
+        return { valid: false, reason: `Invalid 3x3 facelet counts: color '${face}' appears ${counts[face] || 0} times (expected 9)` };
+      }
+    }
+
+    // Check centers (indices 4, 13, 22, 31, 40, 49)
+    const centerIndices = [4, 13, 22, 31, 40, 49];
+    const centerChars = centerIndices.map(i => faceletStr[i]);
+    const centerSet = new Set(centerChars);
+    if (centerSet.size !== 6) {
+      return { valid: false, reason: 'Duplicate or missing center facelet colors' };
+    }
+
+    let cube;
+    try {
+      cube = Cube.fromString(faceletStr);
+    } catch (err) {
+      return { valid: false, reason: `Failed to parse cube state: ${err.message}` };
+    }
+
+    // Check corner permutation uniqueness
+    const cpSet = new Set(cube.cp);
+    if (cpSet.size !== 8) {
+      return { valid: false, reason: 'Invalid corner permutation: duplicates or missing corner pieces' };
+    }
+
+    // Check edge permutation uniqueness
+    const epSet = new Set(cube.ep);
+    if (epSet.size !== 12) {
+      return { valid: false, reason: 'Invalid edge permutation: duplicates or missing edge pieces' };
+    }
+
+    // Corner orientation parity: sum of corner twists must be a multiple of 3
+    const coSum = cube.co.reduce((a, b) => a + b, 0);
+    if (coSum % 3 !== 0) {
+      return { valid: false, reason: 'Corner twist parity error: sum of corner twists must be divisible by 3' };
+    }
+
+    // Edge orientation parity: sum of edge flips must be even
+    const eoSum = cube.eo.reduce((a, b) => a + b, 0);
+    if (eoSum % 2 !== 0) {
+      return { valid: false, reason: 'Edge flip parity error: an odd number of edges are flipped' };
+    }
+
+    // Total permutation parity: corner and edge permutation signs must match
+    if (countInversions(cube.cp) !== countInversions(cube.ep)) {
+      return { valid: false, reason: 'Permutation parity error: odd permutation swap detected' };
+    }
+
+    return { valid: true };
+  }
+
+  return {
+    valid: false,
+    reason: `Invalid facelet string length: received ${faceletStr.length} (expected 24 for 2x2, 54 for 3x3, or 96 for 4x4)`,
+  };
+}
+
 export class SolverService {
   constructor() {
     this.isInitialized = false;
@@ -70,6 +178,10 @@ export class SolverService {
     return this.initPromise;
   }
 
+  validateFaceletString(faceletStr) {
+    return validateFaceletString(faceletStr);
+  }
+
   getInverseMove(move) {
     if (move.endsWith('2')) return move;
     if (move.endsWith("'")) return move.slice(0, -1);
@@ -83,6 +195,18 @@ export class SolverService {
   }
 
   solveFromFaceletString(faceletStr, method = 'kociemba', options = {}) {
+    const validation = this.validateFaceletString(faceletStr);
+    if (!validation.valid) {
+      return {
+        error: validation.reason,
+        isSolved: false,
+        steps: [],
+        rawMoves: [],
+        method,
+        stages: [],
+      };
+    }
+
     if (faceletStr && faceletStr.length === 96) {
       if (solver4x4.isFaceletsSolved(faceletStr)) {
         return { isSolved: true, steps: [], rawMoves: [], method, stages: [] };

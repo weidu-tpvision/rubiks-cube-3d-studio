@@ -1251,3 +1251,156 @@ body.has-player-dock .status-badge {
     display: none;
   }
 }
+
+/* ==========================================================================
+   Speedcubing Timer & Stats Widgets
+   ========================================================================== */
+.timer-widget-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2px 6px;
+  border-radius: 9999px;
+  border: 1px solid var(--surface-border);
+}
+
+.btn-timer-setting {
+  font-size: 0.72rem;
+  padding: 3px 7px;
+  height: 26px;
+  border-radius: 9999px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-timer-setting.active {
+  background: rgba(78, 204, 163, 0.2);
+  border-color: rgba(78, 204, 163, 0.5);
+  color: #4ecca3;
+}
+
+.timer-pill.holding {
+  background: rgba(255, 165, 0, 0.2);
+  border-color: #ffa500;
+  color: #ffa500;
+  transform: scale(0.96);
+}
+
+.timer-pill.ready {
+  background: rgba(78, 204, 163, 0.3);
+  border-color: #4ecca3;
+  color: #4ecca3;
+  box-shadow: 0 0 12px rgba(78, 204, 163, 0.6);
+  transform: scale(1.05);
+}
+
+.timer-pill.inspecting {
+  background: rgba(255, 193, 7, 0.25);
+  border-color: #ffc107;
+  color: #ffc107;
+  animation: pulse-inspection 1s infinite alternate;
+}
+
+@keyframes pulse-inspection {
+  from { opacity: 0.85; }
+  to { opacity: 1.0; text-shadow: 0 0 8px #ffc107; }
+}
+
+.timer-stats-pill {
+  display: flex;
+  gap: 8px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  padding: 2px 8px;
+  border-left: 1px solid var(--surface-border);
+}
+
+.timer-stats-pill strong {
+  color: #ffffff;
+}
+
+/* ==========================================================================
+   Scramble Text Banner
+   ========================================================================== */
+.scramble-banner {
+  position: absolute;
+  top: 66px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(13, 17, 23, 0.88);
+  border: 1px solid var(--surface-border);
+  backdrop-filter: blur(12px);
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-family: 'JetBrains Mono', Consolas, monospace;
+  font-size: 0.86rem;
+  letter-spacing: 1px;
+  color: #e6edf3;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  z-index: 15;
+  pointer-events: none;
+  max-width: 90vw;
+  text-align: center;
+  word-break: break-word;
+}
+
+/* ==========================================================================
+   Themes & Camera Quick-Snap Dropdowns
+   ========================================================================== */
+.theme-dropdown-container,
+.cam-dropdown-container {
+  position: relative;
+}
+
+.theme-menu,
+.cam-view-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 180px;
+  background: rgba(18, 22, 34, 0.96);
+  border: 1px solid var(--surface-border);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(16px);
+  padding: 6px;
+  z-index: 45;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.theme-option,
+.plastic-option,
+.cam-view-btn {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: #d1d5db;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.theme-option:hover,
+.plastic-option:hover,
+.cam-view-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.theme-option.active,
+.plastic-option.active {
+  background: rgba(78, 204, 163, 0.15);
+  color: #4ecca3;
+  font-weight: 600;
+}

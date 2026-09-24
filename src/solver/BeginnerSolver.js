@@ -59,8 +59,9 @@ function getCrossPruningTable() {
   crossPruningTable.set(SOLVED_CROSS_HASH, 0);
 
   const queue = [new Cube()];
-  while (queue.length > 0) {
-    const curr = queue.shift();
+  let head = 0;
+  while (head < queue.length) {
+    const curr = queue[head++];
     const d = crossPruningTable.get(hashCross(curr));
     if (d >= 4) continue;
     for (const m of MOVES_18) {
@@ -97,8 +98,9 @@ function getCpSolveTable() {
   ];
 
   const q = [{ cube: new Cube(), path: [] }];
-  while (q.length > 0) {
-    const curr = q.shift();
+  let qHead = 0;
+  while (qHead < q.length) {
+    const curr = q[qHead++];
     if (curr.path.length >= 3) continue;
     for (const { fwd, inv } of niklasPairs) {
       const next = new Cube(curr.cube);

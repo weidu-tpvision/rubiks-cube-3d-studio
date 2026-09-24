@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import {
   FACE_COLORS,
+  getActiveFaceColors,
   createBodyMaterial,
   createStickerMaterial,
 } from './CubeColors.js';
@@ -370,7 +371,8 @@ export function buildPyraminxPieces() {
       const lp2 = t.p2.clone().sub(pieceCentroid);
 
       const stickerGeom = createInsetTriangleGeometry(lp0, lp1, lp2, t.normal, 0.86, 0.014);
-      const colorInfo = FACE_COLORS[t.colorKey];
+      const activeColors = getActiveFaceColors();
+      const colorInfo = activeColors[t.colorKey] || FACE_COLORS[t.colorKey];
       const stickerMat = createStickerMaterial(colorInfo.hex);
       const stickerMesh = new THREE.Mesh(stickerGeom, stickerMat);
 

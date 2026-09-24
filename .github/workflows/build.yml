@@ -38,6 +38,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Run Unit Tests (Vitest)
+        run: npm test
+
       - name: Build Web Assets (Vite)
         run: npm run build
 

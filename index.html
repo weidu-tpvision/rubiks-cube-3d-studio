@@ -123,14 +123,64 @@
       <button id="btn-tutorial" class="btn btn-accent" title="Interactive speedcubing guides (Beginner, CFOP, Roux)">
         <span class="icon">🎓</span> <span class="btn-label">Learn</span>
       </button>
-      <div id="cube-timer" class="timer-pill" title="Click to start/stop speedsolve timer">
-        0.00s
+
+      <!-- Speedcubing Timer & Stats -->
+      <div class="timer-widget-wrap">
+        <button id="btn-toggle-inspection" class="btn btn-timer-setting" title="Toggle WCA 15s Inspection Mode">⏱️ 15s</button>
+        <div id="cube-timer" class="timer-pill" title="Click or Hold Spacebar to start/stop timer">0.00s</div>
+        <div id="timer-stats-pill" class="timer-stats-pill" title="Speedcubing Session Statistics">
+          <span>PB: <strong id="stat-pb">--</strong></span>
+          <span>Ao5: <strong id="stat-ao5">--</strong></span>
+          <span>Ao12: <strong id="stat-ao12">--</strong></span>
+        </div>
       </div>
-      <button id="btn-reset-cam" class="btn" title="Reset 3D camera angle">
-        <span class="icon">🎥</span>
+
+      <!-- Audio Mute/Unmute Toggle -->
+      <button id="btn-audio-toggle" class="btn btn-icon" title="Toggle mechanical turning sound effects">
+        <span id="btn-audio-icon">🔊</span>
       </button>
+
+      <!-- Theme & Plastics Dropdown -->
+      <div class="theme-dropdown-container">
+        <button id="btn-theme-dropdown" class="btn btn-icon" title="Customize Colors & Plastics">
+          <span class="icon">🎨</span>
+        </button>
+        <div id="theme-menu" class="theme-menu hidden">
+          <div class="menu-heading">Color Palettes</div>
+          <button class="theme-option active" data-theme="classic">Standard Classic</button>
+          <button class="theme-option" data-theme="stickerless_bright">Stickerless Fluoro</button>
+          <button class="theme-option" data-theme="pastel">Pastel / Soft</button>
+          <button class="theme-option" data-theme="carbon_dark">Carbon Dark</button>
+          <div class="menu-divider"></div>
+          <div class="menu-heading">Core Plastic</div>
+          <button class="plastic-option active" data-plastic="black">Black Plastic</button>
+          <button class="plastic-option" data-plastic="white">White Plastic</button>
+          <button class="plastic-option" data-plastic="primary">Primary Plastic</button>
+        </div>
+      </div>
+
+      <!-- Camera Quick-Snap Dropdown -->
+      <div class="cam-dropdown-container">
+        <button id="btn-cam-dropdown" class="btn" title="Snap 3D Camera Views">
+          <span class="icon">🎥</span> <span class="dropdown-caret">▾</span>
+        </button>
+        <div id="cam-view-menu" class="cam-view-menu hidden">
+          <div class="menu-heading">Snap Camera View</div>
+          <button class="cam-view-btn" data-view="front">Front View</button>
+          <button class="cam-view-btn" data-view="back">Back View</button>
+          <button class="cam-view-btn" data-view="top">Top View</button>
+          <button class="cam-view-btn" data-view="bottom">Bottom View</button>
+          <button class="cam-view-btn" data-view="left">Left View</button>
+          <button class="cam-view-btn" data-view="right">Right View</button>
+          <div class="menu-divider"></div>
+          <button class="cam-view-btn" data-view="isometric">Isometric Reset</button>
+        </div>
+      </div>
     </div>
   </header>
+
+  <!-- Scramble text banner -->
+  <div id="scramble-banner" class="scramble-banner hidden"></div>
 
   <!-- Bottom Status Bar (Bottom Left) -->
   <div id="status-msg" class="status-badge">

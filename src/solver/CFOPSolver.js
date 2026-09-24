@@ -65,13 +65,17 @@ function hashCross(c) {
   return `${c.ep[4]},${c.eo[4]},${c.ep[5]},${c.eo[5]},${c.ep[6]},${c.eo[6]},${c.ep[7]},${c.eo[7]}`;
 }
 
-const crossPruningTable = new Map();
-crossPruningTable.set('4,0,5,0,6,0,7,0', 0);
+let crossPruningTable = null;
 
-{
+function getCrossPruningTable() {
+  if (crossPruningTable) return crossPruningTable;
+  crossPruningTable = new Map();
+  crossPruningTable.set('4,0,5,0,6,0,7,0', 0);
+
   const queue = [new Cube()];
-  while (queue.length > 0) {
-    const curr = queue.shift();
+  let head = 0;
+  while (head < queue.length) {
+    const curr = queue[head++];
     const d = crossPruningTable.get(hashCross(curr));
     if (d >= 4) continue;
     for (const m of MOVES_18) {
@@ -84,6 +88,7 @@ crossPruningTable.set('4,0,5,0,6,0,7,0', 0);
       }
     }
   }
+  return crossPruningTable;
 }
 
 export function solveCross(cube) {
@@ -93,9 +98,11 @@ export function solveCross(cube) {
                         c.ep[7] === 7 && c.eo[7] === 0;
   if (isGoal(cube)) return [];
 
+  const pruningTable = getCrossPruningTable();
+
   function getH(c) {
     const h = hashCross(c);
-    if (crossPruningTable.has(h)) return crossPruningTable.get(h);
+    if (pruningTable.has(h)) return pruningTable.get(h);
     return 4;
   }
 

@@ -155,7 +155,6 @@ export class SolverPyraminx {
     this.movePerms = MOVE_PERMS;
     this.solvedState = this.refStickers.map(s => s.faceKey);
     this.backwardTable = null;
-    this.initBackwardTable();
   }
 
   // Precompute backward lookup table from solved state up to depth 5 (~11,969 core states, ~18ms)
@@ -271,6 +270,7 @@ export class SolverPyraminx {
 
   // Bidirectional shortest-path solver for the core (centers & edges)
   solveCore(state) {
+    this.initBackwardTable();
     const key0 = coreKey(state);
     if (this.backwardTable.has(key0)) {
       return this.backwardTable.get(key0);
@@ -278,11 +278,12 @@ export class SolverPyraminx {
 
     // Forward BFS up to depth 6 meeting backwardTable at depth <= 11
     let fQueue = [{ state, path: [] }];
+    let fHead = 0;
     const fVisited = new Set();
     fVisited.add(key0);
 
-    while (fQueue.length > 0) {
-      const { state: s, path } = fQueue.shift();
+    while (fHead < fQueue.length) {
+      const { state: s, path } = fQueue[fHead++];
       if (path.length >= 6) continue;
 
       for (const m of BASE_MOVES) {

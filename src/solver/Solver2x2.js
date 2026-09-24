@@ -101,6 +101,18 @@ export class Solver2x2 {
     return cube;
   }
 
+  kociembaTo2x2(str3) {
+    if (!str3 || str3.length !== 54) return '';
+    return [
+      str3[0], str3[2], str3[6], str3[8], // U
+      str3[9], str3[11], str3[15], str3[17], // R
+      str3[18], str3[20], str3[24], str3[26], // F
+      str3[27], str3[29], str3[33], str3[35], // D
+      str3[36], str3[38], str3[42], str3[44], // L
+      str3[45], str3[47], str3[51], str3[53], // B
+    ].join('');
+  }
+
   isFaceletsSolved(str) {
     if (!str || str.length !== 24) return false;
     for (let f = 0; f < 6; f++) {
