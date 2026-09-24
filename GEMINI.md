@@ -71,8 +71,10 @@ rubic/
 │   └── screenshot.cjs              # Automated headless screenshot generator via Electron
 ├── src/
 │   ├── cube/
-│   │   ├── CubeColors.js           # Palette constants, PBR materials, Canvas center badges
+│   │   ├── CubeAudio.js            # Procedural Web Audio API sound effects (turns, timer beeps)
+│   │   ├── CubeColors.js           # Palette themes, plastic colors, PBR materials, center badges
 │   │   ├── CubeInteraction.js      # Raycasting, pointer drag-to-turn, touch mode, keybinds
+│   │   ├── MegaminxGeometry.js     # Dodecahedron geometry, golden ratio math, 12-face topology
 │   │   ├── PyraminxGeometry.js     # Regular tetrahedron geometry, sticker insets, axis math
 │   │   └── RubiksCube.js           # 3D scene management, cubie groups, pivot twists, snapping
 │   ├── solver/
@@ -88,16 +90,25 @@ rubic/
 │   │   └── VirtualCube4x4.js       # Headless state machine for 4×4 simulation
 │   ├── ui/
 │   │   ├── ControlsUI.js           # Header, puzzle selector, method dropdown, manual move pad
+│   │   ├── SpeedTimer.js           # WCA competition timer, 15s inspection, PB/Ao5/Ao12 stats
 │   │   ├── StepPlayer.js           # Turn-by-turn playback inspector with speed slider
 │   │   └── TutorialUI.js           # Drawer modal for learning curricula and demonstration
 │   ├── main.js                     # Application entry point, Three.js renderer, animation loop
 │   └── style.css                   # Glassmorphism dark-mode responsive styling
+├── tests/                          # Automated test suites executed with Vitest
+│   ├── notation.test.js            # Move inversion & slice notation test suite
+│   ├── parityValidation.test.js    # Unsolvable state and parity detection tests
+│   ├── solverPyraminx.test.js      # Pyraminx optimal and pedagogical solver tests
+│   ├── solvers2x2.test.js          # 2×2 BFS optimal, Ortega, and beginner tests
+│   ├── solvers3x3.test.js          # 3×3 Kociemba, CFOP, Roux, and beginner tests
+│   ├── solvers4x4.test.js          # 4×4 reduction and headless simulation tests
+│   └── speedTimer.test.js          # WCA inspection and Ao5/Ao12 statistical math tests
 ├── capacitor.config.json           # Capacitor configuration for Android app
 ├── index.html                      # Main HTML page, viewport, menus, modals
 ├── Launch-RubiksCubeStudio.bat     # Windows desktop shortcut launcher
 ├── Launch-RubiksCubeStudio.sh      # Linux desktop shortcut launcher
 ├── package.json                    # Project metadata, dependencies, build scripts
-└── vite.config.js                  # Vite configuration (relative base, port 5173)
+└── vite.config.js                  # Vite configuration (PWA, relative base, vendor chunking)
 ```
 
 ---
@@ -110,20 +121,27 @@ rubic/
   - Implements temporary `THREE.Group` pivots for animating face slices, inner slices (`2R`, `2U`), wide turns (`Rw`, `Uw`), or whole-cube rotations (`x`, `y`, `z`).
   - Snaps cubie positions and quaternions to clean mathematical grid orientations upon completing animations.
   - Extracts current sticker configuration into standardized facelet strings (54 chars for 3×3, 24 for 2×2, 96 for 4×4, 36 for Pyraminx).
+  - Handles complete disposal of geometries, textures, and materials when destroying/reinitializing puzzles to prevent WebGL context leaks.
 - **[`PyraminxGeometry.js`](file:///c:/Users/wei.du/WorkAtTPVision/test/rubic/src/cube/PyraminxGeometry.js)**:
   - Models a regular tetrahedron centered at the origin ($a = 3.2$, $R_c = \sqrt{3/8}a$).
   - 14 physical pieces (4 tips, 4 centers, 6 edges) with 36 external triangular stickers.
   - Computes outward face normals and vertex rotation axes ($U, L, R, B$).
+- **[`MegaminxGeometry.js`](file:///c:/Users/wei.du/WorkAtTPVision/test/rubic/src/cube/MegaminxGeometry.js)**:
+  - Foundations for a regular dodecahedron with 12 pentagonal faces and 20 vertices derived from the golden ratio ($\phi$).
+  - Defines 12-face color topology and outward face unit normal vectors.
 
-### 4.2 Interaction & Gesture Engine
+### 4.2 Interaction & Audio Engine
 - **[`CubeInteraction.js`](file:///c:/Users/wei.du/WorkAtTPVision/test/rubic/src/cube/CubeInteraction.js)**:
   - **FreeCAD / CAD-Style Orbit**: Left-click drags turn puzzle slices; right-click drags rotate the 3D camera.
   - **Screen-Space Tangent Projection**: Projects 3D rotational velocity vectors onto the 2D viewport plane to match drag direction to the exact face twist.
   - **Mobile Touch Mode**: Header toggle switches between **✋ Twist** (1-finger face turns) and **🔄 Orbit** (swiping anywhere inspects camera angles without grabbing layers).
   - **Keyboard Bindings**: Face turns (`U, D, L, R, F, B`), modifiers (Shift for Prime, `2` for inner slice, `W` for wide turns, Alt for Pyraminx tips).
+- **[`CubeAudio.js`](file:///c:/Users/wei.du/WorkAtTPVision/test/rubic/src/cube/CubeAudio.js)**:
+  - Procedural Web Audio API sound synthesis (zero external audio asset latency).
+  - Realistic plastic friction and snap clicks on face turns, plus auditory alerts for 8s/12s WCA inspection warnings.
 
 ### 4.3 Solving Engines
-- **[`SolverService.js`](file:///c:/Users/wei.du/WorkAtTPVision/test/rubic/src/solver/SolverService.js)**: Acts as the primary facade.
+- **[`SolverService.js`](file:///c:/Users/wei.du/WorkAtTPVision/test/rubic/src/solver/SolverService.js)**: Acts as the primary facade with mathematical parity and solvability validation.
   - **3×3 Optimal**: Powered by Herbert Kociemba's Two-Phase algorithm via `cubejs` (~20 moves).
   - **3×3 Beginner**: 7-stage Layer-by-Layer solver (Cross, Corners, Second Layer, Yellow Cross, Yellow Edge Permutation, Corner Permutation, Corner Orientation).
   - **3×3 CFOP**: Cross $\to$ 4 F2L pairs $\to$ OLL $\to$ PLL (~70–75 moves).
@@ -132,9 +150,10 @@ rubic/
   - **4×4 Revenge**: Reduction method (Centers $\to$ 12 Dedges $\to$ 3×3 Phase $\to$ OLL/PLL parities).
   - **Pyraminx**: Bidirectional BFS finding shortest core path with trivial tip alignment, and a 4-stage pedagogical beginner method.
 
-### 4.4 UI & Inspection Panel
+### 4.4 UI & Speedcubing Suite
 - **[`StepPlayer.js`](file:///c:/Users/wei.du/WorkAtTPVision/test/rubic/src/ui/StepPlayer.js)**: CAD-style left-docked inspector panel. Provides step badges, natural-language instructions, progress bar, stage indicator pills, start/prev/play/next navigation, and a speed multiplier slider ($0.25\times$ to $3.0\times$).
 - **[`TutorialUI.js`](file:///c:/Users/wei.du/WorkAtTPVision/test/rubic/src/ui/TutorialUI.js)**: Curriculum drawer offering interactive guides. The "Load & Demonstrate on 3D Cube" button sets up textbook positions, highlights target pieces, and loads moves into the Step Player.
+- **[`SpeedTimer.js`](file:///c:/Users/wei.du/WorkAtTPVision/test/rubic/src/ui/SpeedTimer.js)**: Competition timer suite with WCA 15-second inspection phase, Stackmat-style spacebar/touch hold-to-start (orange $\to$ green), real-time millisecond display, scramble text banner, and persistent session statistics (Best, Ao5, Ao12).
 
 ---
 
@@ -143,7 +162,8 @@ rubic/
 | Command | Description |
 |---|---|
 | `npm run dev` | Start Vite local development server on `http://localhost:5173` |
-| `npm run build` | Compile and bundle production assets into `dist/` |
+| `npm test` | Run Vitest test suites across all puzzle solvers and utilities |
+| `npm run build` | Compile and bundle production assets into `dist/` (includes PWA service worker) |
 | `npm run preview` | Locally preview the production build in `dist/` |
 | `npm run electron:dev` | Launch desktop app in Electron pointing to Vite dev server |
 | `npm run electron:build:win` | Package standalone Windows 64-bit application into `release/` |
