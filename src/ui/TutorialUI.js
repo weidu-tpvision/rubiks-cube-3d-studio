@@ -7,6 +7,7 @@ export class TutorialUI {
     this.player = stepPlayer;
     this.methods = TUTORIAL_METHODS;
     this.onCubeDimensionChange = options.onCubeDimensionChange || null;
+    this.onPuzzleChange = options.onPuzzleChange || null;
     const isPyra = this.cube.puzzleType === 'pyraminx';
     const dim = this.cube.dimension;
     this.currentMethodKey = isPyra ? 'pyraminxBeginner' : (dim === 2 ? 'beginner2x2' : (dim === 4 ? 'reduction4x4' : 'beginner'));
@@ -30,6 +31,9 @@ export class TutorialUI {
 
   open() {
     if (this.drawer) {
+      if (this.player && typeof this.player.stopAndClose === 'function') {
+        this.player.stopAndClose();
+      }
       const isPyra = this.cube.puzzleType === 'pyraminx';
       const dim = this.cube.dimension;
       const currentMethod = this.methods[this.currentMethodKey];
@@ -172,12 +176,25 @@ export class TutorialUI {
   demonstrateStage(stage, currentMethod) {
     this.close();
 
-    const targetDim = currentMethod.cubeType === '2x2' ? 2 : (currentMethod.cubeType === '4x4' ? 4 : 3);
-    if (this.cube.dimension !== targetDim) {
-      if (this.onCubeDimensionChange) {
-        this.onCubeDimensionChange(targetDim);
-      } else {
-        this.cube.setDimension(targetDim);
+    const isPyra = currentMethod.cubeType === 'pyraminx';
+    if (isPyra) {
+      if (this.cube.puzzleType !== 'pyraminx') {
+        if (this.onPuzzleChange) {
+          this.onPuzzleChange('pyraminx');
+        } else {
+          this.cube.setPuzzleType('pyraminx');
+        }
+      }
+    } else {
+      const targetDim = currentMethod.cubeType === '2x2' ? 2 : (currentMethod.cubeType === '4x4' ? 4 : 3);
+      if (this.cube.puzzleType !== 'cube' || this.cube.dimension !== targetDim) {
+        if (this.onPuzzleChange) {
+          this.onPuzzleChange('cube', targetDim);
+        } else if (this.onCubeDimensionChange) {
+          this.onCubeDimensionChange(targetDim);
+        } else {
+          this.cube.setPuzzleType('cube', targetDim);
+        }
       }
     }
 

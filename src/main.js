@@ -125,6 +125,9 @@ class App {
       onCubeDimensionChange: (dim) => {
         this.controlsUI?.setCubeDimension(dim);
       },
+      onPuzzleChange: (shape, dim) => {
+        this.controlsUI?.setPuzzle(shape, dim);
+      },
     });
 
     this.controlsUI = new ControlsUI(

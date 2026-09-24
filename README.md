@@ -16,15 +16,22 @@ Available across all major platforms:
 
 ## ✨ Key Features
 
-### 🧊 Puzzle Variations (4×4 Revenge, 3×3 Standard & 2×2 Pocket Cube)
+### 🧊 Puzzle Variations (4×4 Revenge, 3×3 Standard, 2×2 Pocket Cube & Pyraminx)
 Switch between puzzle variations directly from the top **Puzzle Shape** dropdown menu (`[ 🧊 3×3 Cube ▾ ]`):
 - **4×4 Revenge (Master Cube)**: 56 pieces, 96 facelets, no fixed central core. Full support for single-layer turns (`R, U...`), wide two-layer turns (`Rw, Uw, Fw...`), and the 4×4 Reduction method with OLL and PLL Parity resolutions.
 - **3×3 Standard Cube**: Classic 6 faces, 26 pieces, 54 facelets. Full support for Kociemba Optimal, CFOP, Roux, and Beginner Layer-by-Layer methods.
 - **2×2 Pocket Cube**: 8 corners, 24 facelets. Solved with **Optimal BFS (God's Algorithm $\le 11$ moves)** in $<10\text{ms}$, **Ortega Method**, or **Beginner LBL**.
+- **Pyraminx**: Regular tetrahedron puzzle with 4 faces, 14 physical pieces (4 tips, 4 centers, 6 edges), and 36 external stickers. Full support for vertex layer turns (`U, L, R, B`), tip twists (`u, l, r, b`), and bidirectional BFS optimal & beginner solving.
 - **Extensible Design**: Dropdown architecture ready for higher-order variations and non-cubic shapes.
 
 ### 🧩 Solving Methods (Optimal & Human)
 Select your preferred solving method directly from the top solver dropdown:
+
+#### Pyraminx Methods:
+| Method | Stages | Typical Moves | Description |
+|---|:---:|:---:|---|
+| **⚡ Optimal (God's Algorithm)** | 1 | $\le 11$ | High-speed bidirectional BFS finding the shortest core path combined with trivial tip alignment. |
+| **🔰 Beginner (LBL)** | 4 | ~12–16 | 4 pedagogical stages: Orient Tips → Align Centers (V-Shape) → First Layer Edges → Last Layer Edges. |
 
 #### 4×4 Methods:
 | Method | Stages | Typical Moves | Description |
@@ -55,7 +62,7 @@ Select your preferred solving method directly from the top solver dropdown:
 - **Fine Speed Controls**: Discrete speed multiplier slider (`0.25x`, `0.5x`, `0.75x`, `1.0x`, `1.5x`, `2.0x`, `3.0x`).
 
 ### 🎓 Learn Methods ("Load & Demonstrate on 3D Cube")
-- Step-by-step curriculum for **4×4 Reduction & Parities**, **3×3 Beginner/CFOP/Roux**, and **2×2 Beginner/Ortega**.
+- Step-by-step curriculum for **4×4 Reduction & Parities**, **3×3 Beginner/CFOP/Roux**, **2×2 Beginner/Ortega**, and **Pyraminx Beginner (LBL)**.
 - Each stage includes goal explanations, mnemonics, and algorithms.
 - **"Load & Demonstrate on 3D Cube"**: Scrambles the cube to the exact textbook scenario, dims unrelated pieces to highlight target pieces, and loads the solution into the step player for turn-by-turn demonstration.
 - Highlights automatically restore when you start solving or resetting the cube.
@@ -65,7 +72,7 @@ Strict separation of mouse actions prevents accidental camera movement while tur
 
 | Action | Mouse / Keyboard | Description |
 |---|---|---|
-| **Turn Cube Face** | **Left-Click Drag** on piece | Click any piece and drag in the desired turn direction: clicking outer pieces twists the 1st outer layer (`R, U...`); clicking inner pieces twists the 2nd layer slice (`2R, 2U...`); with `w` active, twists 2 layers wide (`Rw, Uw...`). |
+| **Turn Cube Face** | **Left-Click Drag** on piece | Click any piece and drag in the desired turn direction: clicking outer pieces twists the 1st outer layer (`R, U...`); clicking inner pieces twists the 2nd layer slice (`2R, 2U...`); with `w` active, twists 2 layers wide (`Rw, Uw...`). On Pyraminx, clicking pieces turns corresponding vertex layers (`U, L, R, B`) or tips (`u, l, r, b`). |
 | **Orbit 3D Camera** | **Right-Click Drag** anywhere<br>*(or Left-Click Drag on empty space)* | Smoothly rotates the 3D cube viewpoint from any angle. |
 | **Pan Camera** | **Shift + Right-Click** or **Ctrl + Right-Click** | Translates/pans the camera view across the screen. |
 | **Zoom / Dolly** | **Scroll Wheel** | Zooms camera in and out smoothly. |
@@ -77,11 +84,13 @@ Strict separation of mouse actions prevents accidental camera movement while tur
 
 ### 🎛️ Manual Move Pad & Keyboard Shortcuts
 - **On-Screen Control Pad** (bottom right):
-  - Turn buttons: **U** (Top/White), **D** (Bottom/Yellow), **F** (Front/Green), **B** (Back/Blue), **L** (Left/Orange), **R** (Right/Red).
+  - Cube turn buttons: **U** (Top/White), **D** (Bottom/Yellow), **F** (Front/Green), **B** (Back/Blue), **L** (Left/Orange), **R** (Right/Red).
+  - Pyraminx turn buttons: **U, L, R, B** (2 layers) and **u, l, r, b** (vertex tips).
   - Modifier toggles: **`'`** (Prime / CCW), **`180°`** (Double Turn), **`2nd`** (Turn only 2nd layer inner slice on 4×4), and **`w`** (Wide 2-layer turn for 4×4).
-  - Whole-cube rotations: **Rot X**, **Rot Y**, **Rot Z**.
+  - Whole-puzzle rotations: **Rot X**, **Rot Y**, **Rot Z**.
 - **Keyboard Shortcuts**:
   - `U`, `D`, `L`, `R`, `F`, `B` for clockwise face turns (hold `Shift` for prime counter-clockwise turns).
+  - On Pyraminx: `U`, `L`, `R`, `B` for vertex turns; hold `Alt` or lowercase for tip turns (`u`, `l`, `r`, `b`); hold `Shift` for prime turns.
   - `2` key toggles 2nd layer slice mode on 4×4 (`2R`, `2U`...).
   - `W` key toggles Wide 2-layer mode on 4×4 (`Rw`, `Uw`...).
 
@@ -180,6 +189,7 @@ The project includes an Android Studio Gradle project in the `android/` director
   - **4×4 Solver**: Genuine state-based 4×4 Reduction solver (Centers → Edge pairing → 3×3 Phase via Herbert Kociemba Two-Phase Group Theory) with center-preserving slice OLL Parity and PLL Parity resolutions. Powered by headless simulation engine `VirtualCube4x4` with precomputed permutation cycles (`perms4x4.js`).
   - **3×3 Solver**: [cubejs](https://github.com/ldez/cubejs) (Herbert Kociemba Two-Phase optimal group theory solver) and custom rule engines for Beginner Layer-by-Layer, CFOP (Fridrich), and Roux.
   - **2×2 Solver**: Custom bidirectional Breadth-First Search (BFS) over corner permutation/orientation states (God's Algorithm $\le 11$ moves in $<10\text{ms}$), Ortega Method (OLL/PBL), and Beginner LBL.
+  - **Pyraminx Solver**: Custom bidirectional Breadth-First Search (BFS) finding God's Algorithm ($\le 11$ moves) and 4-stage pedagogical beginner Layer-by-Layer method with tip-center synchronization. Regular tetrahedron geometry engine (`PyraminxGeometry.js`).
 
 ---
 

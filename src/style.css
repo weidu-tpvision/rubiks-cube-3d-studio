@@ -49,6 +49,7 @@ body.has-player-dock #app-viewport {
 }
 
 body.has-tutorial-drawer #app-viewport {
+  left: 0;
   right: min(620px, 50vw);
   bottom: 0;
 }

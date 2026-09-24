@@ -84,6 +84,13 @@ export class StepPlayer {
     this.currentIndex = -1;
     this.title = title;
 
+    // Ensure tutorial drawer is closed so two large panels do not occlude viewport
+    const tutDrawer = document.getElementById('tutorial-drawer');
+    if (tutDrawer && tutDrawer.classList.contains('open')) {
+      tutDrawer.classList.remove('open');
+      document.body.classList.remove('has-tutorial-drawer');
+    }
+
     if (this.container) {
       this.container.classList.remove('hidden');
     }
