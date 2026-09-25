@@ -16,6 +16,7 @@ export class CubeInteraction {
 
     this.isPointerDown = false;
     this.isDraggingFace = false;
+    this.isOrbiting = false;
     this.startScreenPos = new THREE.Vector2();
     this.hitSticker = null;
     this.hitNormal = new THREE.Vector3();
@@ -46,15 +47,66 @@ export class CubeInteraction {
     return this.touchMode;
   }
 
+  isTurnableSticker(stickerMesh) {
+    if (!stickerMesh || !stickerMesh.parent) return false;
+    if (this.cube.puzzleType === 'pyraminx' || this.cube.dimension === 2 || this.cube.dimension === 4) {
+      return true;
+    }
+    const cubiePos = new THREE.Vector3();
+    stickerMesh.parent.getWorldPosition(cubiePos);
+    return (Math.abs(Math.round(cubiePos.x)) + Math.abs(Math.round(cubiePos.y)) + Math.abs(Math.round(cubiePos.z))) >= 2;
+  }
+
   updateCursor(isHoveringTurnableLayer = false) {
+    if (this.isOrbiting || this.isDraggingFace) {
+      this.canvas.style.cursor = 'grabbing';
+      return;
+    }
     this.canvas.style.cursor = isHoveringTurnableLayer ? 'pointer' : 'default';
   }
 
+  checkHoverCursor(e) {
+    if (!e || e.pointerType === 'touch') return;
+    if (this.isOrbiting || this.isDraggingFace || (e.buttons && ((e.buttons & 2) !== 0 || (e.buttons & 4) !== 0))) {
+      this.canvas.style.cursor = 'grabbing';
+      return;
+    }
+
+    const rect = this.canvas.getBoundingClientRect();
+    const isInsideCanvas = e.clientX >= rect.left && e.clientX <= rect.right &&
+                           e.clientY >= rect.top && e.clientY <= rect.bottom;
+    if (!isInsideCanvas) {
+      this.canvas.style.cursor = 'default';
+      return;
+    }
+
+    const p = this.getPointerPos(e);
+    this.pointer.set(p.x, p.y);
+    this.raycaster.setFromCamera(this.pointer, this.camera);
+    const intersects = this.raycaster.intersectObjects(this.cube.allStickers, false);
+    if (intersects.length > 0) {
+      const isTurnable = this.isTurnableSticker(intersects[0].object);
+      this.updateCursor(isTurnable);
+    } else {
+      this.updateCursor(false);
+    }
+  }
+
   initPointerEvents() {
-    this.canvas.addEventListener('pointerdown', (e) => this.onPointerDown(e));
-    window.addEventListener('pointermove', (e) => this.onPointerMove(e));
-    window.addEventListener('pointerup', (e) => this.onPointerUp(e));
-    window.addEventListener('pointercancel', (e) => this.onPointerUp(e));
+    if (this.canvas?.addEventListener) {
+      this.canvas.addEventListener('pointerdown', (e) => this.onPointerDown(e));
+      this.canvas.addEventListener('pointerleave', () => {
+        if (!this.isOrbiting && !this.isPointerDown) {
+          this.canvas.style.cursor = 'default';
+        }
+      });
+    }
+    if (typeof window !== 'undefined') {
+      window.addEventListener('pointermove', (e) => this.onPointerMove(e));
+      window.addEventListener('pointerup', (e) => this.onPointerUp(e));
+      window.addEventListener('pointercancel', (e) => this.onPointerUp(e));
+      window.addEventListener('blur', () => this.onPointerUp());
+    }
   }
 
   getPointerPos(e) {
@@ -74,8 +126,9 @@ export class CubeInteraction {
     // Ignore secondary touch pointers to allow smooth two-finger pinch-zoom/pan
     if (isTouch && !e.isPrimary) return;
 
-    // Mouse Right-click: Handled strictly by OrbitControls to rotate the 3D cube
-    if (!isTouch && e.button === 2) {
+    // Mouse Right-click (2) or Middle-click (1): Handled strictly by OrbitControls to rotate / pan the 3D scene
+    if (!isTouch && (e.button === 2 || e.button === 1)) {
+      this.isOrbiting = true;
       this.canvas.style.cursor = 'grabbing';
       return;
     }
@@ -117,8 +170,8 @@ export class CubeInteraction {
         cubiePos.z = Math.round(cubiePos.z);
       }
 
-      // In 2x2 and 4x4 all outer pieces are turnable. In 3x3, edges and corners (sum of abs >= 2). In Pyraminx, all stickers are turnable.
-      const isTurnableLayer = this.cube.puzzleType === 'pyraminx' || this.cube.dimension === 2 || this.cube.dimension === 4 || (Math.abs(cubiePos.x) + Math.abs(cubiePos.y) + Math.abs(cubiePos.z)) >= 2;
+      // Check if clicked piece is part of a turnable layer
+      const isTurnableLayer = this.isTurnableSticker(hit.object);
 
       if (isTurnableLayer) {
         this.hitSticker = hit.object;
@@ -130,6 +183,9 @@ export class CubeInteraction {
 
         this.isPointerDown = true;
         this.isDraggingFace = true;
+        if (!isTouch) {
+          this.canvas.style.cursor = 'grabbing';
+        }
 
         // When user is dragging to twist a face, temporarily pause OrbitControls so camera doesn't spin
         if (this.orbitControls) {
@@ -146,23 +202,26 @@ export class CubeInteraction {
   }
 
   onPointerMove(e) {
-    // Hover cursor feedback on desktop
-    if (!this.isPointerDown && e.pointerType !== 'touch') {
-      const p = this.getPointerPos(e);
-      this.pointer.set(p.x, p.y);
-      this.raycaster.setFromCamera(this.pointer, this.camera);
-      const intersects = this.raycaster.intersectObjects(this.cube.allStickers, false);
-      if (intersects.length > 0) {
-        const cubiePos = new THREE.Vector3();
-        intersects[0].object.parent.getWorldPosition(cubiePos);
-        const isTurnable = this.cube.puzzleType === 'pyraminx' || this.cube.dimension === 2 || this.cube.dimension === 4 || (Math.abs(Math.round(cubiePos.x)) + Math.abs(Math.round(cubiePos.y)) + Math.abs(Math.round(cubiePos.z))) >= 2;
-        this.updateCursor(isTurnable);
-      } else {
-        this.updateCursor(false);
-      }
+    const isTouch = e.pointerType === 'touch';
+
+    // 1. Maintain 'grabbing' cursor during right/middle-click OrbitControls rotation or panning
+    if (!isTouch && (this.isOrbiting || (e.buttons && ((e.buttons & 2) !== 0 || (e.buttons & 4) !== 0)))) {
+      this.isOrbiting = true;
+      this.canvas.style.cursor = 'grabbing';
+      return;
     }
 
+    // 2. Hover cursor feedback on desktop (only when not interacting and no buttons pressed)
+    if (!this.isPointerDown && !this.isOrbiting && !isTouch && (e.buttons === 0 || e.buttons === undefined)) {
+      this.checkHoverCursor(e);
+    }
+
+    // 3. Layer drag gesture resolution
     if (!this.isPointerDown || !this.isDraggingFace || this.cube.isAnimating) return;
+
+    if (!isTouch) {
+      this.canvas.style.cursor = 'grabbing';
+    }
 
     const p = this.getPointerPos(e);
     const dx = p.screenX - this.startScreenPos.x;
@@ -177,11 +236,19 @@ export class CubeInteraction {
   }
 
   onPointerUp(e) {
+    this.isOrbiting = false;
     this.isPointerDown = false;
     this.isDraggingFace = false;
-    this.canvas.style.cursor = 'default';
+
     if (this.orbitControls) {
       this.orbitControls.enabled = true;
+    }
+
+    // If mouse button released, restore cursor immediately based on what's under the pointer
+    if (e && e.pointerType !== 'touch' && (e.buttons === 0 || e.buttons === undefined)) {
+      this.checkHoverCursor(e);
+    } else if (!e || e.pointerType !== 'touch') {
+      this.canvas.style.cursor = 'default';
     }
   }
 
@@ -396,6 +463,7 @@ export class CubeInteraction {
   }
 
   initKeyboardEvents() {
+    if (typeof window === 'undefined') return;
     window.addEventListener('keydown', (e) => {
       // Don't trigger shortcuts if focus is in an input field
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) return;
