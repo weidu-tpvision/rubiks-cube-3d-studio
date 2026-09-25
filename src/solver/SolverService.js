@@ -449,6 +449,26 @@ export class SolverService {
     return solver4x4.solveReduction(faceletStr, options);
   }
 
+  isSolved(rubiksCube) {
+    if (!rubiksCube) return false;
+    if (rubiksCube.puzzleType === 'pyraminx') {
+      const state = solverPyraminx.extractStickerColors(rubiksCube);
+      return solverPyraminx.isSolved(state);
+    }
+    const faceletStr = typeof rubiksCube.getFaceletString === 'function'
+      ? rubiksCube.getFaceletString()
+      : rubiksCube;
+    if (!faceletStr || typeof faceletStr !== 'string') return false;
+    if (faceletStr.length === 96) {
+      return solver4x4.isFaceletsSolved(faceletStr);
+    }
+    if (faceletStr.length === 24) {
+      return solver2x2.isFaceletsSolved(faceletStr);
+    }
+    const solvedStr = 'UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB';
+    return faceletStr === solvedStr;
+  }
+
   solve(rubiksCube, method = 'kociemba', options = {}) {
     if (rubiksCube.puzzleType === 'pyraminx') {
       return solverPyraminx.solve(rubiksCube, method);

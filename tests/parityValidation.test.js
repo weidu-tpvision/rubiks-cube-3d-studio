@@ -96,4 +96,14 @@ describe('Rubik\'s State Parity & Solvability Validation', () => {
     expect(res.steps).toEqual([]);
     expect(res.rawMoves).toEqual([]);
   });
+
+  it('correctly reports isSolved for solved and scrambled cubes', () => {
+    expect(solverService.isSolved(SOLVED_3X3)).toBe(true);
+    expect(solverService.isSolved(SOLVED_2X2)).toBe(true);
+    expect(solverService.isSolved(SOLVED_4X4)).toBe(true);
+
+    const scrambled3x3 = 'UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB'.slice(1) + 'U';
+    expect(solverService.isSolved(scrambled3x3)).toBe(false);
+    expect(solverService.isSolved(null)).toBe(false);
+  });
 });

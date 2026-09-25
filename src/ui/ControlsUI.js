@@ -25,6 +25,18 @@ export class ControlsUI {
     this.initThemeMenu();
     this.initCameraQuickSnap();
 
+    // Auto-stop speed timer if virtual solve reaches solved state
+    if (this.cube && typeof this.cube.addQueueEmptyListener === 'function') {
+      this.cube.addQueueEmptyListener(() => {
+        if (this.speedTimer && this.speedTimer.state === 'running') {
+          if (solverService.isSolved(this.cube)) {
+            this.speedTimer.stop();
+            this.setStatusMessage('🎉 Solved! Great time recorded.');
+          }
+        }
+      });
+    }
+
     // Initialize wide & slice button visibility
     const wideToggle = document.getElementById('mod-wide');
     const sliceToggle = document.getElementById('mod-slice');
@@ -435,15 +447,19 @@ export class ControlsUI {
     };
   }
 
+  resetTimer() {
+    if (this.speedTimer) {
+      this.speedTimer.reset();
+    }
+    const scrambleEl = document.getElementById('scramble-banner');
+    if (scrambleEl) scrambleEl.classList.add('hidden');
+  }
+
   resetCube() {
     this.player.stopAndClose();
     this.cube.resetHighlights();
     this.cube.reset();
-    if (this.speedTimer) {
-      this.speedTimer.cancelHold();
-    }
-    const scrambleEl = document.getElementById('scramble-banner');
-    if (scrambleEl) scrambleEl.classList.add('hidden');
+    this.resetTimer();
     this.setStatusMessage('Cube reset to solved state.');
   }
 

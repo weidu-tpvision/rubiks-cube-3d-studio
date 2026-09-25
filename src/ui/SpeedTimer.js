@@ -48,6 +48,13 @@ export class SpeedTimer {
 
     // Keyboard handlers (Spacebar Stackmat emulation)
     let spacePressed = false;
+    const puzzleKeyCodes = new Set([
+      'KeyU', 'KeyD', 'KeyL', 'KeyR', 'KeyF', 'KeyB',
+      'KeyX', 'KeyY', 'KeyZ', 'KeyW', 'Digit2',
+      'ShiftLeft', 'ShiftRight', 'AltLeft', 'AltRight',
+      'ControlLeft', 'ControlRight', 'MetaLeft', 'MetaRight',
+      'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
+    ]);
 
     window.addEventListener('keydown', (e) => {
       // Ignore if typing in an input field or dialog
@@ -65,9 +72,13 @@ export class SpeedTimer {
         } else if (this.state === 'idle') {
           this.beginHold();
         }
+      } else if (e.code === 'Escape') {
+        if (this.state === 'running' || this.state === 'inspecting' || this.state === 'holding') {
+          this.reset();
+        }
       } else {
-        // Any other key stops the running timer
-        if (this.state === 'running') {
+        // Any non-puzzle key stops the running timer (for physical cubers tapping a key when done)
+        if (this.state === 'running' && !puzzleKeyCodes.has(e.code)) {
           this.stop();
         }
       }
@@ -144,20 +155,37 @@ export class SpeedTimer {
     }, 300);
   }
 
+  reset() {
+    if (this.holdTimeout) clearTimeout(this.holdTimeout);
+    if (this.timerInterval) clearInterval(this.timerInterval);
+    if (this.inspectionInterval) clearInterval(this.inspectionInterval);
+    this.state = 'idle';
+    if (this.timerEl) {
+      this.timerEl.classList.remove('running', 'inspecting', 'holding', 'ready');
+      if (this.solves.length > 0) {
+        this.timerEl.textContent = `${this.solves[this.solves.length - 1].time.toFixed(2)}s`;
+      } else {
+        this.timerEl.textContent = '0.00s';
+      }
+    }
+  }
+
   cancelHold() {
     if (this.holdTimeout) clearTimeout(this.holdTimeout);
     this.state = 'idle';
-    this.timerEl.classList.remove('holding', 'ready');
-    if (this.solves.length > 0) {
-      this.timerEl.textContent = `${this.solves[this.solves.length - 1].time.toFixed(2)}s`;
-    } else {
-      this.timerEl.textContent = '0.00s';
+    if (this.timerEl) {
+      this.timerEl.classList.remove('holding', 'ready');
+      if (this.solves.length > 0) {
+        this.timerEl.textContent = `${this.solves[this.solves.length - 1].time.toFixed(2)}s`;
+      } else {
+        this.timerEl.textContent = '0.00s';
+      }
     }
   }
 
   endHoldAndStart() {
     if (this.holdTimeout) clearTimeout(this.holdTimeout);
-    this.timerEl.classList.remove('holding', 'ready');
+    if (this.timerEl) this.timerEl.classList.remove('holding', 'ready');
 
     if (this.state === 'ready') {
       if (this.isInspectionEnabled && this.state !== 'inspecting') {
@@ -172,7 +200,7 @@ export class SpeedTimer {
     if (this.inspectionInterval) clearInterval(this.inspectionInterval);
     this.state = 'inspecting';
     this.inspectionStartTime = performance.now();
-    this.timerEl.classList.add('inspecting');
+    if (this.timerEl) this.timerEl.classList.add('inspecting');
 
     let alerted8 = false;
     let alerted12 = false;
@@ -190,12 +218,14 @@ export class SpeedTimer {
         cubeAudio.playBeep(880, 0.12);
       }
 
-      if (elapsed < 15) {
-        this.timerEl.textContent = `${remaining}s`;
-      } else if (elapsed < 17) {
-        this.timerEl.textContent = '+2s';
-      } else {
-        this.timerEl.textContent = 'DNF';
+      if (this.timerEl) {
+        if (elapsed < 15) {
+          this.timerEl.textContent = `${remaining}s`;
+        } else if (elapsed < 17) {
+          this.timerEl.textContent = '+2s';
+        } else {
+          this.timerEl.textContent = 'DNF';
+        }
       }
     }, 100);
   }
@@ -206,14 +236,18 @@ export class SpeedTimer {
 
     this.state = 'running';
     this.startTime = performance.now();
-    this.timerEl.classList.remove('inspecting', 'holding', 'ready');
-    this.timerEl.classList.add('running');
+    if (this.timerEl) {
+      this.timerEl.classList.remove('inspecting', 'holding', 'ready');
+      this.timerEl.classList.add('running');
+    }
 
     cubeAudio.playBeep(880, 0.04);
 
     this.timerInterval = setInterval(() => {
       const elapsed = (performance.now() - this.startTime) / 1000;
-      this.timerEl.textContent = `${elapsed.toFixed(2)}s`;
+      if (this.timerEl) {
+        this.timerEl.textContent = `${elapsed.toFixed(2)}s`;
+      }
     }, 25);
   }
 
@@ -224,11 +258,16 @@ export class SpeedTimer {
     if (this.state === 'running' && this.startTime) {
       const elapsed = (performance.now() - this.startTime) / 1000;
       this.recordSolve(elapsed);
+      if (this.timerEl) {
+        this.timerEl.textContent = `${elapsed.toFixed(2)}s`;
+      }
       cubeAudio.playBeep(1046, 0.08);
     }
 
     this.state = 'idle';
-    this.timerEl.classList.remove('running', 'inspecting', 'holding', 'ready');
+    if (this.timerEl) {
+      this.timerEl.classList.remove('running', 'inspecting', 'holding', 'ready');
+    }
   }
 
   recordSolve(timeSeconds) {

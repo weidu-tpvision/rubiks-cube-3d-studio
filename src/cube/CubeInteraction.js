@@ -71,6 +71,8 @@ export class CubeInteraction {
     if (!this.enabled || this.cube.isAnimating) return;
 
     const isTouch = e.pointerType === 'touch';
+    // Ignore secondary touch pointers to allow smooth two-finger pinch-zoom/pan
+    if (isTouch && !e.isPrimary) return;
 
     // Mouse Right-click: Handled strictly by OrbitControls to rotate the 3D cube
     if (!isTouch && e.button === 2) {

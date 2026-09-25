@@ -58,4 +58,19 @@ describe('Speedcubing Timer & Statistics', () => {
     timer.toggleInspection();
     expect(timer.isInspectionEnabled).toBe(initial);
   });
+
+  it('resets timer state and stops intervals cleanly', () => {
+    timer.state = 'running';
+    timer.timerInterval = 12345;
+    timer.inspectionInterval = 54321;
+    timer.reset();
+    expect(timer.state).toBe('idle');
+  });
+
+  it('clears solve history and resets stats display', () => {
+    timer.solves = [{ time: 10.5 }, { time: 12.3 }];
+    timer.clearHistory();
+    expect(timer.solves).toEqual([]);
+    expect(timer.getBest()).toBeNull();
+  });
 });
