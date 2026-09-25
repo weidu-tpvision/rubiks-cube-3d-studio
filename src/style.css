@@ -1314,19 +1314,6 @@ body.has-player-dock .status-badge {
   to { opacity: 1.0; text-shadow: 0 0 8px #ffc107; }
 }
 
-.timer-stats-pill {
-  display: flex;
-  gap: 8px;
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  padding: 2px 8px;
-  border-left: 1px solid var(--surface-border);
-}
-
-.timer-stats-pill strong {
-  color: #ffffff;
-}
-
 /* ==========================================================================
    Themes & Camera Quick-Snap Dropdowns
    ========================================================================== */

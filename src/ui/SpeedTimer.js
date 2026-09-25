@@ -4,10 +4,10 @@ import { cubeAudio } from '../cube/CubeAudio.js';
 export class SpeedTimer {
   constructor(options = {}) {
     this.timerEl = options.timerEl || document.getElementById('cube-timer');
-    this.pbEl = options.pbEl || document.getElementById('stat-pb');
-    this.ao5El = options.ao5El || document.getElementById('stat-ao5');
-    this.ao12El = options.ao12El || document.getElementById('stat-ao12');
-    this.inspectionBtn = options.inspectionBtn || document.getElementById('btn-toggle-inspection') || null;
+    this.pbEl = options.pbEl || null;
+    this.ao5El = options.ao5El || null;
+    this.ao12El = options.ao12El || null;
+    this.inspectionBtn = options.inspectionBtn || null;
 
     this.state = 'idle'; // 'idle' | 'holding' | 'ready' | 'inspecting' | 'running'
     this.isInspectionEnabled = false;
@@ -31,7 +31,7 @@ export class SpeedTimer {
     }
 
     this.init();
-    this.updateStatsDisplay();
+    if (this.timerEl) this.timerEl.textContent = '0.00s';
   }
 
   init() {
@@ -157,11 +157,7 @@ export class SpeedTimer {
     this.state = 'idle';
     if (this.timerEl) {
       this.timerEl.classList.remove('running', 'inspecting', 'holding', 'ready');
-      if (this.solves.length > 0) {
-        this.timerEl.textContent = `${this.solves[this.solves.length - 1].time.toFixed(2)}s`;
-      } else {
-        this.timerEl.textContent = '0.00s';
-      }
+      this.timerEl.textContent = '0.00s';
     }
   }
 
@@ -170,11 +166,7 @@ export class SpeedTimer {
     this.state = 'idle';
     if (this.timerEl) {
       this.timerEl.classList.remove('holding', 'ready');
-      if (this.solves.length > 0) {
-        this.timerEl.textContent = `${this.solves[this.solves.length - 1].time.toFixed(2)}s`;
-      } else {
-        this.timerEl.textContent = '0.00s';
-      }
+      this.timerEl.textContent = '0.00s';
     }
   }
 
