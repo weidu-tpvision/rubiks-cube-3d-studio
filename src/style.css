@@ -30,6 +30,10 @@ body, html {
   color: var(--text-main);
 }
 
+.hidden {
+  display: none !important;
+}
+
 /* 3D App Viewport */
 #app-viewport {
   position: absolute;
@@ -1324,31 +1328,6 @@ body.has-player-dock .status-badge {
 }
 
 /* ==========================================================================
-   Scramble Text Banner
-   ========================================================================== */
-.scramble-banner {
-  position: absolute;
-  top: 66px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(13, 17, 23, 0.88);
-  border: 1px solid var(--surface-border);
-  backdrop-filter: blur(12px);
-  padding: 6px 16px;
-  border-radius: 20px;
-  font-family: 'JetBrains Mono', Consolas, monospace;
-  font-size: 0.86rem;
-  letter-spacing: 1px;
-  color: #e6edf3;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-  z-index: 15;
-  pointer-events: none;
-  max-width: 90vw;
-  text-align: center;
-  word-break: break-word;
-}
-
-/* ==========================================================================
    Themes & Camera Quick-Snap Dropdowns
    ========================================================================== */
 .theme-dropdown-container,
@@ -1372,6 +1351,11 @@ body.has-player-dock .status-badge {
   display: flex;
   flex-direction: column;
   gap: 3px;
+}
+
+.theme-menu.hidden,
+.cam-view-menu.hidden {
+  display: none !important;
 }
 
 .theme-option,

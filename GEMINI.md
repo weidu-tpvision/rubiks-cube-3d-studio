@@ -63,7 +63,9 @@ rubic/
 │   ├── screenshot-2x2-solve.png
 │   ├── screenshot-2x2-learn.png
 │   ├── screenshot-4x4-solve.png
-│   └── screenshot-4x4-learn.png
+│   ├── screenshot-4x4-learn.png
+│   ├── screenshot-pyraminx-solve.png
+│   └── screenshot-pyraminx-learn.png
 ├── electron/
 │   └── main.cjs                    # Electron main process (BrowserWindow, dev/prod loading)
 ├── release/                        # Packaged desktop executables (git-ignored output)

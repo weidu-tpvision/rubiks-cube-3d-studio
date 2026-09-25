@@ -132,5 +132,28 @@ app.whenReady().then(async () => {
   await new Promise(r => setTimeout(r, 600));
   await captureToFile('screenshot-4x4-learn.png');
 
+  // 7. Switch to Pyraminx Mode, Scramble, and Solve (with step player open)
+  await win.webContents.executeJavaScript(`
+    (() => {
+      window.app.tutorialUI.close();
+      window.app.controlsUI.setPuzzle('pyraminx');
+      const scramblePyra = window.app.controlsUI.generateScramble(11);
+      window.app.rubiksCube.twistInstant(scramblePyra);
+      window.app.controlsUI.startStepByStepSolve();
+    })()
+  `);
+  await new Promise(r => setTimeout(r, 600));
+  await captureToFile('screenshot-pyraminx-solve.png');
+
+  // 8. Capture Pyraminx Learn Methods Drawer
+  await win.webContents.executeJavaScript(`
+    (() => {
+      window.app.stepPlayer.stopAndClose();
+      window.app.tutorialUI.open();
+    })()
+  `);
+  await new Promise(r => setTimeout(r, 600));
+  await captureToFile('screenshot-pyraminx-learn.png');
+
   app.quit();
 });

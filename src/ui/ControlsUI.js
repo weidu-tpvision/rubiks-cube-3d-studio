@@ -46,6 +46,20 @@ export class ControlsUI {
     }
   }
 
+  closeAllDropdowns(exceptMenu = null) {
+    const menus = [
+      document.getElementById('cube-variation-menu'),
+      document.getElementById('solve-method-menu'),
+      document.getElementById('theme-menu'),
+      document.getElementById('cam-view-menu'),
+    ];
+    menus.forEach(m => {
+      if (m && m !== exceptMenu) {
+        m.classList.add('hidden');
+      }
+    });
+  }
+
   initControls() {
     // Cube Shape / Variation Dropdown toggle
     const cubeMenuBtn = document.getElementById('btn-cube-dropdown');
@@ -53,13 +67,17 @@ export class ControlsUI {
 
     cubeMenuBtn?.addEventListener('click', (e) => {
       e.stopPropagation();
-      cubeMenu?.classList.toggle('hidden');
-    });
-
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest('.cube-dropdown-container')) {
+      const isHidden = cubeMenu?.classList.contains('hidden');
+      this.closeAllDropdowns(cubeMenu);
+      if (isHidden) {
+        cubeMenu?.classList.remove('hidden');
+      } else {
         cubeMenu?.classList.add('hidden');
       }
+    });
+
+    document.addEventListener('click', () => {
+      this.closeAllDropdowns();
     });
 
     cubeMenu?.querySelectorAll('.cube-option:not(.option-disabled)').forEach(btn => {
@@ -86,11 +104,11 @@ export class ControlsUI {
 
     solveMenuBtn?.addEventListener('click', (e) => {
       e.stopPropagation();
-      solveMenu?.classList.toggle('hidden');
-    });
-
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest('.solve-dropdown-container')) {
+      const isHidden = solveMenu?.classList.contains('hidden');
+      this.closeAllDropdowns(solveMenu);
+      if (isHidden) {
+        solveMenu?.classList.remove('hidden');
+      } else {
         solveMenu?.classList.add('hidden');
       }
     });
@@ -451,8 +469,6 @@ export class ControlsUI {
     if (this.speedTimer) {
       this.speedTimer.reset();
     }
-    const scrambleEl = document.getElementById('scramble-banner');
-    if (scrambleEl) scrambleEl.classList.add('hidden');
   }
 
   resetCube() {
@@ -582,11 +598,11 @@ export class ControlsUI {
 
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      menu.classList.toggle('hidden');
-    });
-
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest('.theme-dropdown-container')) {
+      const isHidden = menu.classList.contains('hidden');
+      this.closeAllDropdowns(menu);
+      if (isHidden) {
+        menu.classList.remove('hidden');
+      } else {
         menu.classList.add('hidden');
       }
     });
@@ -619,11 +635,11 @@ export class ControlsUI {
 
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      menu.classList.toggle('hidden');
-    });
-
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest('.cam-dropdown-container')) {
+      const isHidden = menu.classList.contains('hidden');
+      this.closeAllDropdowns(menu);
+      if (isHidden) {
+        menu.classList.remove('hidden');
+      } else {
         menu.classList.add('hidden');
       }
     });

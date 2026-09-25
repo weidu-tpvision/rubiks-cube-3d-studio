@@ -7,8 +7,7 @@ export class SpeedTimer {
     this.pbEl = options.pbEl || document.getElementById('stat-pb');
     this.ao5El = options.ao5El || document.getElementById('stat-ao5');
     this.ao12El = options.ao12El || document.getElementById('stat-ao12');
-    this.scrambleEl = options.scrambleEl || document.getElementById('scramble-banner');
-    this.inspectionBtn = options.inspectionBtn || document.getElementById('btn-toggle-inspection');
+    this.inspectionBtn = options.inspectionBtn || document.getElementById('btn-toggle-inspection') || null;
 
     this.state = 'idle'; // 'idle' | 'holding' | 'ready' | 'inspecting' | 'running'
     this.isInspectionEnabled = false;
@@ -121,10 +120,6 @@ export class SpeedTimer {
 
   setScramble(scrambleStr) {
     this.currentScramble = scrambleStr;
-    if (this.scrambleEl) {
-      this.scrambleEl.textContent = scrambleStr;
-      this.scrambleEl.classList.remove('hidden');
-    }
   }
 
   toggleInspection() {
