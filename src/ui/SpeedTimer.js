@@ -22,7 +22,7 @@ export class SpeedTimer {
     try {
       if (typeof localStorage !== 'undefined') {
         this.solves = JSON.parse(localStorage.getItem('rubiks_speed_solves') || '[]');
-        this.isInspectionEnabled = localStorage.getItem('rubiks_inspection_enabled') === 'true';
+        this.isInspectionEnabled = options.isInspectionEnabled || false;
       } else {
         this.solves = [];
       }

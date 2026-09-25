@@ -98,13 +98,14 @@ rubic/
 │   ├── main.js                     # Application entry point, Three.js renderer, animation loop
 │   └── style.css                   # Glassmorphism dark-mode responsive styling
 ├── tests/                          # Automated test suites executed with Vitest
+│   ├── interaction.test.js         # Cursor & orbit state management tests
 │   ├── notation.test.js            # Move inversion & slice notation test suite
 │   ├── parityValidation.test.js    # Unsolvable state and parity detection tests
 │   ├── solverPyraminx.test.js      # Pyraminx optimal and pedagogical solver tests
 │   ├── solvers2x2.test.js          # 2×2 BFS optimal, Ortega, and beginner tests
 │   ├── solvers3x3.test.js          # 3×3 Kociemba, CFOP, Roux, and beginner tests
 │   ├── solvers4x4.test.js          # 4×4 reduction and headless simulation tests
-│   └── speedTimer.test.js          # WCA inspection and Ao5/Ao12 statistical math tests
+│   └── speedTimer.test.js          # Statistical math & timer state tests
 ├── capacitor.config.json           # Capacitor configuration for Android app
 ├── index.html                      # Main HTML page, viewport, menus, modals
 ├── Launch-RubiksCubeStudio.bat     # Windows desktop shortcut launcher
@@ -135,12 +136,13 @@ rubic/
 ### 4.2 Interaction & Audio Engine
 - **[`CubeInteraction.js`](file:///c:/Users/wei.du/WorkAtTPVision/test/rubic/src/cube/CubeInteraction.js)**:
   - **FreeCAD / CAD-Style Orbit**: Left-click drags turn puzzle slices; right-click drags rotate the 3D camera.
+  - **Context-Aware Dynamic Cursors**: Hovering over turnable layers displays hand (`pointer`); right-click camera orbiting strictly maintains `grabbing` even across puzzle stickers; releasing automatically restores hover state.
   - **Screen-Space Tangent Projection**: Projects 3D rotational velocity vectors onto the 2D viewport plane to match drag direction to the exact face twist.
   - **Mobile Touch Mode**: Header toggle switches between **✋ Twist** (1-finger face turns) and **🔄 Orbit** (swiping anywhere inspects camera angles without grabbing layers).
   - **Keyboard Bindings**: Face turns (`U, D, L, R, F, B`), modifiers (Shift for Prime, `2` for inner slice, `W` for wide turns, Alt for Pyraminx tips).
 - **[`CubeAudio.js`](file:///c:/Users/wei.du/WorkAtTPVision/test/rubic/src/cube/CubeAudio.js)**:
   - Procedural Web Audio API sound synthesis (zero external audio asset latency).
-  - Realistic plastic friction and snap clicks on face turns, plus auditory alerts for 8s/12s WCA inspection warnings.
+  - Realistic plastic friction and snap clicks on face turns, tactile body thumps, and header mute/unmute control.
 
 ### 4.3 Solving Engines
 - **[`SolverService.js`](file:///c:/Users/wei.du/WorkAtTPVision/test/rubic/src/solver/SolverService.js)**: Acts as the primary facade with mathematical parity and solvability validation.
@@ -155,7 +157,7 @@ rubic/
 ### 4.4 UI & Speedcubing Suite
 - **[`StepPlayer.js`](file:///c:/Users/wei.du/WorkAtTPVision/test/rubic/src/ui/StepPlayer.js)**: CAD-style left-docked inspector panel. Provides step badges, natural-language instructions, progress bar, stage indicator pills, start/prev/play/next navigation, and a speed multiplier slider ($0.25\times$ to $3.0\times$).
 - **[`TutorialUI.js`](file:///c:/Users/wei.du/WorkAtTPVision/test/rubic/src/ui/TutorialUI.js)**: Curriculum drawer offering interactive guides. The "Load & Demonstrate on 3D Cube" button sets up textbook positions, highlights target pieces, and loads moves into the Step Player.
-- **[`SpeedTimer.js`](file:///c:/Users/wei.du/WorkAtTPVision/test/rubic/src/ui/SpeedTimer.js)**: Competition timer suite with WCA 15-second inspection phase, Stackmat-style spacebar/touch hold-to-start (orange $\to$ green), real-time millisecond display, scramble text banner, and persistent session statistics (Best, Ao5, Ao12).
+- **[`SpeedTimer.js`](file:///c:/Users/wei.du/WorkAtTPVision/test/rubic/src/ui/SpeedTimer.js)**: Minimalist speedcubing timer with Stackmat-style spacebar/touch hold-to-start (orange $\to$ green), real-time millisecond display, and automated reset on puzzle change.
 
 ---
 

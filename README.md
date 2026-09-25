@@ -82,6 +82,21 @@ Strict separation of mouse actions prevents accidental camera movement while tur
 > - **Desktop**: Mouse controls already separate twisting (Left-Click) from camera rotation (Right-Click), so desktop users don't need this toggle.
 > - **Touchscreens / Android App**: Because mobile devices lack a physical right-click button, this button provides a dedicated **Orbit** mode so touch users can swipe anywhere on screen (even directly over the puzzle) to freely inspect all sides without accidentally turning a layer.
 
+### ⏱️ Speedcubing Timer
+- **Stackmat-Style Hold-to-Start**: Press and hold the Spacebar or click-and-hold the timer pill (turns orange `Hold...`, then green `READY!` after 300ms) to emulate a competition Stackmat timer. Releasing starts the timer immediately.
+- **Real-Time Millisecond Precision**: Tracks solve times down to the hundredth of a second with clean high-contrast display.
+- **Automated Puzzle Synchronization**: Unconditionally resets on switching puzzle shapes or loading demonstration stages.
+
+### 🎨 Color Themes & Core Plastics
+Select your favorite visual style directly from the **Palette** dropdown menu in the header:
+- **Color Palettes**: *Standard Classic*, *Stickerless Fluoro*, *Pastel / Soft*, and *Carbon Dark*.
+- **Body Plastics**: *Black Plastic*, *White Plastic*, and *Primary Plastic* materials.
+- Preserves the current scrambled state seamlessly when switching themes on the fly.
+
+### 🔊 Procedural Audio & 🎥 Camera Presets
+- **Procedural Web Audio Engine**: Zero-asset realistic plastic friction and snap clicks on face turns with header mute toggle (**🔊 / 🔇**).
+- **Camera View Presets**: Click the camera menu to snap directly to orthogonal faces (*Front*, *Back*, *Top*, *Bottom*, *Left*, *Right*) or the default *Isometric* view.
+
 ### 🎛️ Manual Move Pad & Keyboard Shortcuts
 - **On-Screen Control Pad** (bottom right):
   - Cube turn buttons: **U** (Top/White), **D** (Bottom/Yellow), **F** (Front/Green), **B** (Back/Blue), **L** (Left/Orange), **R** (Right/Red).
@@ -177,6 +192,15 @@ The project includes an Android Studio Gradle project in the `android/` director
 - **Touch Mode Switcher (✋ Twist vs 🔄 Orbit)**: Solves the lack of a physical right mouse button on touchscreens. Allows users to switch to Orbit mode and swipe anywhere on screen (including over the cube) to inspect angles without grabbing a layer.
 - **Haptic Feedback**: Subtle vibration upon completing slice turns.
 - **Android Hardware Back Button**: Closes the Tutorial drawer or Step Player before exiting the app.
+
+---
+
+### 6. Automated Testing (Vitest)
+
+Execute the full suite of 44 automated unit tests covering all puzzle solvers, group theory, parity validation, notation inversion, and speed timer math:
+```bash
+npm test
+```
 
 ---
 
